@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     console.log('=== GAME GENERATION SUCCESS ===')
     return NextResponse.json(response)
-  } catch (error) {
+  } catch (error: any) {
     console.error('=== GAME GENERATION ERROR ===')
     console.error('Error generating game content:', error)
     console.error('Error stack:', error.stack)
