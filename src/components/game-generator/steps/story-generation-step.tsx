@@ -22,13 +22,13 @@ export function StoryGenerationStep({
   isLoading 
 }: StoryGenerationStepProps) {
   const [customInstructions, setCustomInstructions] = useState('')
-  const [hasGenerated, setHasGenerated] = useState(false)
+  const [, setHasGenerated] = useState(false)
 
   const handleGenerate = async () => {
     try {
       await onGenerate()
       setHasGenerated(true)
-    } catch (error) {
+    } catch {
       toast.error('Failed to generate story content')
     }
   }

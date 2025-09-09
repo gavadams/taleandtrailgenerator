@@ -59,7 +59,7 @@ export class AIService {
       throw new Error('No content generated from OpenAI')
     }
 
-    return this.parseAIResponse(content)
+    return this.parseAIResponse(content, request)
   }
 
   private async generateWithAnthropic(request: AIGenerationRequest): Promise<AIGenerationResponse> {
@@ -86,7 +86,7 @@ export class AIService {
       throw new Error('Unexpected response type from Anthropic')
     }
 
-    return this.parseAIResponse(content.text)
+      return this.parseAIResponse(content.text, request)
   }
 
   private async generateWithGoogle(request: AIGenerationRequest): Promise<AIGenerationResponse> {
@@ -118,53 +118,60 @@ export class AIService {
         throw new Error('No content generated from Google AI')
       }
 
-      return this.parseAIResponse(content)
+      return this.parseAIResponse(content, request)
     } catch (error: any) {
       console.error('Google AI generation error:', error)
       
-      // If it's a parsing error, try once more with a simpler prompt
-      if (error.message.includes('parse AI response')) {
-        console.log('Retrying with simplified prompt...')
+      // If it's a parsing error, try once more with a much simpler prompt
+      if (error.message.includes('parse AI response') || error.message.includes('format error') || error.message.includes('structure error')) {
+        console.log('Retrying with much simpler prompt...')
         try {
-          const simplifiedPrompt = `Generate a pub crawl mystery game for ${request.city}${request.cityArea ? ` in the ${request.cityArea} area` : ''}. Use real, established pub crawl routes from online sources. Return ONLY valid JSON in this format:
+          const simplifiedPrompt = `Create a pub crawl mystery game for ${request.city}${request.cityArea ? ` in ${request.cityArea}` : ''}. 
+
+${request.cityArea ? `IMPORTANT: Only use pubs in ${request.cityArea}.` : ''}
+
+CRITICAL: Use REAL pub names that actually exist. Do NOT use placeholder text like "Another pub in..." or "needs research". Research actual pubs in the area.
+
+Return ONLY this JSON format (no other text):
 
 {
   "story": {
-    "title": "Game Title",
+    "title": "Mystery in ${request.city}",
     "intro": {
-      "title": "Welcome Title",
-      "content": "Introduction story",
-      "mapsLink": "Google Maps link"
+      "title": "Welcome",
+      "content": "You are investigating a mystery in ${request.city}${request.cityArea ? `'s ${request.cityArea} area` : ''}.",
+      "mapsLink": "https://maps.google.com"
     },
     "resolution": {
-      "title": "Resolution Title", 
-      "content": "Final resolution"
+      "title": "Case Solved",
+      "content": "Congratulations! You solved the mystery."
     },
-    "characterTypes": ["detective", "witness", "suspect"]
+    "characterTypes": ["detective", "witness"]
   },
   "locations": [
     {
       "order": 1,
       "placeholderName": "{PUB_1}",
+      "actualName": "The Red Lion",
       "venueType": "traditional-pub",
-      "narrative": "Story context",
-      "transitionText": "Bridge to next location",
-      "mapsLink": "Google Maps link",
-      "walkingTime": "5-10 minutes",
-      "areaDescription": "Area description"
+      "narrative": "First pub${request.cityArea ? ` in ${request.cityArea}` : ''}",
+      "transitionText": "Walk to next location",
+      "mapsLink": "https://maps.google.com",
+      "walkingTime": "5 minutes",
+      "areaDescription": "${request.cityArea || 'City area'}"
     }
   ],
   "puzzles": [
     {
-      "title": "Puzzle Title",
-      "narrative": "Puzzle setup",
-      "type": "logic",
-      "content": "Puzzle content",
-      "answer": "Correct answer",
-      "clues": ["Hint 1", "Hint 2", "Hint 3"],
-      "difficulty": 3,
+      "title": "First Clue",
+      "narrative": "Find the clue",
+      "type": "observation",
+      "content": "Look around the pub",
+      "answer": "clue",
+      "clues": ["Look carefully", "Check the details", "It's obvious"],
+      "difficulty": 2,
       "order": 1,
-      "localContext": "Local context"
+      "localContext": "${request.city} context"
     }
   ]
 }`
@@ -174,7 +181,7 @@ export class AIService {
           const retryContent = retryResponse.text()
           
           if (retryContent) {
-            return this.parseAIResponse(retryContent)
+            return this.parseAIResponse(retryContent, request)
           }
         } catch (retryError) {
           console.error('Retry also failed:', retryError)
@@ -199,13 +206,20 @@ Estimated duration: ${request.estimatedDuration} minutes
 
 ${request.customInstructions ? `Custom instructions: ${request.customInstructions}` : ''}
 
-${request.cityArea ? `🚨 CRITICAL AREA REQUIREMENT 🚨
-You MUST create a pub crawl route that stays EXCLUSIVELY within the ${request.cityArea} area of ${request.city}. 
-- Do NOT select pubs from other neighborhoods or areas
-- Do NOT use pubs from city center, downtown, or other districts
-- ALL pubs must be located specifically in ${request.cityArea}
-- If you cannot find enough pubs in ${request.cityArea}, reduce the number of pubs rather than using pubs from other areas
-- This is a HARD REQUIREMENT that cannot be ignored` : ''}
+${request.cityArea ? `🚨🚨🚨 ABSOLUTE AREA REQUIREMENT - NON-NEGOTIABLE 🚨🚨🚨
+YOU ARE CREATING A PUB CRAWL FOR ${request.cityArea.toUpperCase()} IN ${request.city.toUpperCase()}.
+
+THIS IS NOT OPTIONAL. THIS IS NOT A SUGGESTION. THIS IS MANDATORY.
+
+- EVERY SINGLE PUB MUST BE LOCATED IN ${request.cityArea.toUpperCase()}
+- DO NOT USE PUBS FROM ANY OTHER AREA
+- DO NOT USE PUBS FROM CITY CENTER, DOWNTOWN, OR OTHER DISTRICTS
+- DO NOT USE GENERIC DEFAULT PUBS UNLESS THEY ARE ACTUALLY IN ${request.cityArea.toUpperCase()}
+- IF YOU CANNOT FIND ENOUGH PUBS IN ${request.cityArea.toUpperCase()}, USE FEWER PUBS
+- RESEARCH ACTUAL PUBS THAT EXIST IN ${request.cityArea.toUpperCase()}
+- THIS REQUIREMENT OVERRIDES ALL OTHER INSTRUCTIONS
+
+FAILURE TO COMPLY WITH THIS AREA REQUIREMENT WILL RESULT IN AN INVALID RESPONSE.` : ''}
 
 CRITICAL: Use REAL, ESTABLISHED pub crawl routes from online sources, travel guides, and local recommendations. Do NOT create fictional routes or pubs. Research actual pub crawl routes that are documented and popular in the specified area.
 
@@ -298,7 +312,15 @@ REAL PUB CRAWL ROUTE EXAMPLES TO RESEARCH:
 - Food and drink tour company routes
 - Local bar association or pub guide recommendations
 
-CRITICAL: You MUST respond with ONLY valid JSON in the following format. Do not include any text before or after the JSON. Do not use markdown code blocks. Return ONLY the JSON object:
+CRITICAL: You MUST respond with ONLY valid JSON in the following format. Do not include any text before or after the JSON. Do not use markdown code blocks. Return ONLY the JSON object.
+
+🚨 ABSOLUTE REQUIREMENTS FOR PUB DATA 🚨:
+- Do NOT use placeholder text like "Another pub in..." or "needs research"
+- Do NOT use generic names like "Pub 1", "Pub 2", etc.
+- You MUST provide REAL pub names that actually exist
+- You MUST provide complete information for EVERY pub
+- If you cannot find enough real pubs in the specified area, use fewer pubs
+- Every pub must have a real name, real venue type, and real details
 
 {
   "story": {
@@ -318,12 +340,13 @@ CRITICAL: You MUST respond with ONLY valid JSON in the following format. Do not 
     {
       "order": 1,
       "placeholderName": "{PUB_1}",
+      "actualName": "The Crown & Anchor",
       "venueType": "traditional-pub",
-      "narrative": "Story context for this pub",
+      "narrative": "Story context for this pub${request.cityArea ? ` - MUST mention ${request.cityArea}` : ''}",
       "transitionText": "Story bridge to next location",
-      "mapsLink": "Google Maps link",
+      "mapsLink": "https://maps.google.com/?q=The+Crown+Anchor+${request.city}",
       "walkingTime": "5-10 minutes to next pub",
-      "areaDescription": "Brief description of this area/neighborhood",
+      "areaDescription": "Brief description of this area/neighborhood${request.cityArea ? ` - MUST mention ${request.cityArea}` : ''}",
       "routeSource": "Source of this pub crawl route (e.g., 'Time Out Manchester', 'Local tourism board', 'Established pub crawl company')"
     }
   ],
@@ -381,7 +404,7 @@ ${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pu
     `.trim()
   }
 
-  private parseAIResponse(content: string): AIGenerationResponse {
+  private parseAIResponse(content: string, request?: AIGenerationRequest): AIGenerationResponse {
     try {
       console.log('Raw AI response content:', content)
       
@@ -424,7 +447,7 @@ ${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pu
         console.error('Problematic JSON string:', jsonString)
         
         // Try to clean up common JSON issues
-        let cleanedJson = jsonString
+        const cleanedJson = jsonString
           .replace(/,\s*}/g, '}') // Remove trailing commas before }
           .replace(/,\s*]/g, ']') // Remove trailing commas before ]
           .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Add quotes around unquoted keys
@@ -446,12 +469,74 @@ ${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pu
         throw new Error('Invalid response structure from AI - missing required fields')
       }
 
+      // Validate area compliance if cityArea was specified (lenient check)
+      if (request && request.cityArea && parsed.locations) {
+        console.log('Validating area compliance for:', request.cityArea)
+        const areaName = request.cityArea.toLowerCase()
+        let areaMentioned = false
+        
+        // Check if the area is mentioned anywhere in the response
+        const responseText = JSON.stringify(parsed).toLowerCase()
+        areaMentioned = responseText.includes(areaName)
+        
+        console.log('Area compliance check:', {
+          areaName,
+          areaMentioned,
+          responsePreview: responseText.substring(0, 500)
+        })
+        
+        // Only warn if area is completely missing, don't reject the response
+        if (!areaMentioned) {
+          console.warn('Warning: Area not mentioned in AI response, but allowing it through')
+        } else {
+          console.log('✓ Area compliance validated')
+        }
+      }
+
+      // Validate that no placeholder text is used
+      if (parsed.locations) {
+        const responseText = JSON.stringify(parsed).toLowerCase()
+        const placeholderPatterns = [
+          'another pub in',
+          'needs research',
+          'pub 1',
+          'pub 2',
+          'pub 3',
+          'pub 4',
+          'pub 5',
+          'placeholder',
+          'to be determined',
+          'tbd'
+        ]
+        
+        const hasPlaceholders = placeholderPatterns.some(pattern => 
+          responseText.includes(pattern)
+        )
+        
+        if (hasPlaceholders) {
+          console.warn('Warning: AI response contains placeholder text, but allowing it through')
+          console.log('Response contains placeholder patterns:', placeholderPatterns.filter(p => responseText.includes(p)))
+        } else {
+          console.log('✓ No placeholder text detected')
+        }
+      }
+
       return parsed as AIGenerationResponse
     } catch (error: any) {
       console.error('Error parsing AI response:', error)
       console.error('Raw content length:', content.length)
       console.error('Raw content preview:', content.substring(0, 500))
-      throw new Error(`Failed to parse AI response: ${error.message}`)
+      console.error('Error type:', error.name)
+      console.error('Error message:', error.message)
+      
+      // Provide more specific error messages
+      if (error.message.includes('JSON')) {
+        throw new Error(`AI response format error: The AI did not return valid JSON. Please try again.`)
+      } else if (error.message.includes('structure')) {
+        throw new Error(`AI response structure error: Missing required fields. Please try again.`)
+      } else {
+        throw new Error(`Failed to parse AI response: ${error.message}`)
+      }
     }
   }
 }

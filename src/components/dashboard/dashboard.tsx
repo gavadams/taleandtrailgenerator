@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/components/auth/auth-provider'
 import { GameCard } from './game-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Search, Filter, Crown } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Plus, Search, Crown } from 'lucide-react'
 import { Game, Theme, Difficulty } from '@/types'
 // Removed direct database import - using API calls instead
 import { toast } from 'sonner'
@@ -27,13 +27,7 @@ export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPane
   const [filterTheme, setFilterTheme] = useState<Theme | ''>('')
   const [filterDifficulty, setFilterDifficulty] = useState<Difficulty | ''>('')
 
-  useEffect(() => {
-    if (user) {
-      loadGames()
-    }
-  }, [user])
-
-  const loadGames = async () => {
+  const loadGames = useCallback(async () => {
     if (!user) return
     
     setLoading(true)
@@ -48,7 +42,13 @@ export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPane
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      loadGames()
+    }
+  }, [user, loadGames])
 
   const handleDeleteGame = async (game: Game) => {
     if (!user) return

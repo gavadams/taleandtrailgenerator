@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CheckCircle, MapPin, Puzzle, Clock, Eye, Download, Save } from 'lucide-react'
+import { CheckCircle, MapPin, Puzzle, Clock, Download, Save } from 'lucide-react'
 import { Game } from '@/types'
 
 interface ReviewStepProps {
@@ -59,7 +59,7 @@ export function ReviewStep({ gameData, onSave, onBack }: ReviewStepProps) {
       text += `## Pub #${index + 1} – ${location.actualName || location.placeholderName}\n\n`
       text += `${location.narrative}\n\n`
 
-      location.puzzles?.forEach((puzzle: any, pIndex: number) => {
+      location.puzzles?.forEach((puzzle: any) => {
         text += `### ${puzzle.title}\n\n`
         text += `${puzzle.narrative}\n\n`
         text += `${puzzle.content}\n\n`
@@ -234,7 +234,7 @@ export function ReviewStep({ gameData, onSave, onBack }: ReviewStepProps) {
                     <CardContent>
                       <div className="space-y-2">
                         <p className="text-sm text-gray-600">{location.narrative}</p>
-                        {location.puzzles?.map((puzzle: any, pIndex: number) => (
+                        {location.puzzles?.map((puzzle: any) => (
                           <div key={puzzle.id} className="ml-4 p-2 bg-gray-50 rounded text-sm">
                             <div className="font-medium">{puzzle.title}</div>
                             <div className="text-gray-600">Type: {puzzle.type} • Difficulty: {puzzle.difficulty}</div>

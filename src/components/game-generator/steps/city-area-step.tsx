@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Building2, Navigation, Info, Clock, Users, Star, Route } from 'lucide-react'
+import { MapPin, Building2, Navigation, Info, Clock } from 'lucide-react'
 import { getPredefinedRoutesByCity, PredefinedRoute } from '@/lib/data/predefined-routes'
 
 interface CityAreaStepProps {

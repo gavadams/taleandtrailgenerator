@@ -57,7 +57,7 @@ export function GamePreview({ game, onBack }: GamePreviewProps) {
       text += `## Pub #${index + 1} – ${location.actualName || location.placeholderName}\n\n`
       text += `${location.narrative}\n\n`
 
-      location.puzzles?.forEach((puzzle, pIndex) => {
+      location.puzzles?.forEach((puzzle) => {
         text += `### ${puzzle.title}\n\n`
         text += `${puzzle.narrative}\n\n`
         text += `${puzzle.content}\n\n`
@@ -215,7 +215,7 @@ export function GamePreview({ game, onBack }: GamePreviewProps) {
                       <p className="whitespace-pre-wrap">{location.narrative}</p>
                     </div>
 
-                    {location.puzzles?.map((puzzle, pIndex) => (
+                    {location.puzzles?.map((puzzle) => (
                       <Card key={puzzle.id} className="bg-gray-50">
                         <CardHeader>
                           <CardTitle className="text-base">{puzzle.title}</CardTitle>

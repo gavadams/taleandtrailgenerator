@@ -105,7 +105,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
         let errorData
         try {
           errorData = await response.json()
-        } catch (e) {
+        } catch {
           errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
         }
         console.error('User creation error:', errorData)

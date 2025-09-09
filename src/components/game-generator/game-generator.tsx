@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/components/auth/auth-provider'
-import { Game, GameGenerationState, AIGenerationRequest } from '@/types'
+import { Game, GameGenerationState } from '@/types'
 // Removed direct database import - using API calls instead
 // Removed direct AI service import - using API route instead
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Wand2, Settings, MapPin, Puzzle, Eye } from 'lucide-react'
+import { ArrowLeft, Wand2 } from 'lucide-react'
 import { GameSetupStep } from './steps/game-setup-step'
 import { CityAreaStep } from './steps/city-area-step'
 import { StoryGenerationStep } from './steps/story-generation-step'

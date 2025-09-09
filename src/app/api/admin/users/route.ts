@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET - List all users
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Verify the requesting user is an admin
     const supabase = await createClient()

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // POST - Clean up orphaned users
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Verify the requesting user is an admin
     const supabase = await createClient()
