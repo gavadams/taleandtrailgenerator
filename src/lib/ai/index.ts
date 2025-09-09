@@ -155,6 +155,10 @@ PUZZLE EXCELLENCE:
 12. Make clues CONTEXTUAL and MEANINGFUL - they should feel natural to the story
 13. Include MULTIPLE LAYERS of puzzle solving (observation + deduction + local knowledge)
 14. Design puzzles that encourage TEAMWORK and DISCUSSION among players
+15. AVOID generic puzzles - make each puzzle SPECIFIC to the location, story, and characters
+16. Create puzzles that require players to think creatively and make connections
+17. Ensure puzzles have clear, unambiguous answers that can be verified
+18. Make puzzles engaging and fun, not frustrating or overly complex
 
 WALKING ROUTE REQUIREMENTS:
 15. ${request.cityArea ? 
@@ -190,6 +194,10 @@ HIGH-QUALITY PUZZLE EXAMPLES:
 - A local knowledge puzzle about the city's history that connects to the mystery
 - A mathematical puzzle that calculates distances or times relevant to the case
 - A wordplay puzzle using local dialect or historical language
+- A deduction puzzle where players must cross-reference witness statements
+- A pattern puzzle that reveals a hidden message in the pub's layout or design
+- A local knowledge puzzle about the area's famous residents or events
+- A logic puzzle involving the pub's history or previous owners
 
 STORY EXCELLENCE EXAMPLES:
 - Characters with hidden motivations that are revealed through puzzle solutions

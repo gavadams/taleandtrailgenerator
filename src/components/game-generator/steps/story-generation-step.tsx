@@ -78,6 +78,19 @@ export function StoryGenerationStep({
                 <div className="text-lg font-semibold capitalize">{gameData.theme}</div>
               </div>
               <div>
+                <Label className="text-sm font-medium text-gray-700">City</Label>
+                <div className="text-lg font-semibold">{gameData.city}</div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Area</Label>
+                <div className="text-lg font-semibold">{gameData.cityArea || 'Entire city'}</div>
+                {gameData.cityArea && (
+                  <div className="mt-1 p-1 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                    ✓ Custom area selected
+                  </div>
+                )}
+              </div>
+              <div>
                 <Label className="text-sm font-medium text-gray-700">Location</Label>
                 <div className="text-lg font-semibold">{gameData.city}</div>
               </div>

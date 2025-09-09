@@ -49,6 +49,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
   const [aiProvider, setAiProvider] = useState<'openai' | 'anthropic' | 'google'>('google')
 
   const handleStepComplete = (stepId: string, data: any) => {
+    console.log(`Step ${stepId} completed with data:`, data)
     setGenerationState(prev => ({
       ...prev,
       steps: prev.steps.map(step => 

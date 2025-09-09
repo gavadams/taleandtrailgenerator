@@ -29,6 +29,7 @@ export function CityAreaStep({ initialData, onComplete }: CityAreaStepProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('CityAreaStep submitting data:', formData)
     onComplete(formData)
   }
 
@@ -202,6 +203,13 @@ export function CityAreaStep({ initialData, onComplete }: CityAreaStepProps) {
               <p className="text-sm text-gray-500 mt-1">
                 Specify a particular area within {initialData.city} for your pub crawl route
               </p>
+              {formData.cityArea && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-800">
+                    ✓ Custom area selected: <strong>{formData.cityArea}</strong>
+                  </p>
+                </div>
+              )}
             </div>
 
             {suggestedAreas.length > 0 && (
