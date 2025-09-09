@@ -8,8 +8,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('Request body:', body)
     console.log('Custom area from request:', body.cityArea)
+    console.log('Custom area validation:', {
+      exists: !!body.cityArea,
+      type: typeof body.cityArea,
+      length: body.cityArea?.length,
+      value: body.cityArea
+    })
     
     const { provider, ...generationRequest }: { provider: string } & AIGenerationRequest = body
+    
+    console.log('Generation request after destructuring:', generationRequest)
+    console.log('City area in generation request:', generationRequest.cityArea)
 
     // Validate the request
     if (!generationRequest.theme || !generationRequest.city || !generationRequest.difficulty) {

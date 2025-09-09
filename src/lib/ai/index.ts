@@ -101,8 +101,13 @@ export class AIService {
     })
 
     const prompt = this.buildGameGenerationPrompt(request)
-    console.log('Google AI prompt includes cityArea:', request.cityArea)
-    console.log('Full prompt preview:', prompt.substring(0, 500) + '...')
+    console.log('=== AI REQUEST DEBUG ===')
+    console.log('Request object:', JSON.stringify(request, null, 2))
+    console.log('City Area from request:', request.cityArea)
+    console.log('City Area type:', typeof request.cityArea)
+    console.log('City Area length:', request.cityArea?.length)
+    console.log('Full prompt preview:', prompt.substring(0, 1000) + '...')
+    console.log('=== END AI REQUEST DEBUG ===')
     
     try {
       const result = await model.generateContent(prompt)
@@ -116,6 +121,66 @@ export class AIService {
       return this.parseAIResponse(content)
     } catch (error: any) {
       console.error('Google AI generation error:', error)
+      
+      // If it's a parsing error, try once more with a simpler prompt
+      if (error.message.includes('parse AI response')) {
+        console.log('Retrying with simplified prompt...')
+        try {
+          const simplifiedPrompt = `Generate a pub crawl mystery game for ${request.city}${request.cityArea ? ` in the ${request.cityArea} area` : ''}. Use real, established pub crawl routes from online sources. Return ONLY valid JSON in this format:
+
+{
+  "story": {
+    "title": "Game Title",
+    "intro": {
+      "title": "Welcome Title",
+      "content": "Introduction story",
+      "mapsLink": "Google Maps link"
+    },
+    "resolution": {
+      "title": "Resolution Title", 
+      "content": "Final resolution"
+    },
+    "characterTypes": ["detective", "witness", "suspect"]
+  },
+  "locations": [
+    {
+      "order": 1,
+      "placeholderName": "{PUB_1}",
+      "venueType": "traditional-pub",
+      "narrative": "Story context",
+      "transitionText": "Bridge to next location",
+      "mapsLink": "Google Maps link",
+      "walkingTime": "5-10 minutes",
+      "areaDescription": "Area description"
+    }
+  ],
+  "puzzles": [
+    {
+      "title": "Puzzle Title",
+      "narrative": "Puzzle setup",
+      "type": "logic",
+      "content": "Puzzle content",
+      "answer": "Correct answer",
+      "clues": ["Hint 1", "Hint 2", "Hint 3"],
+      "difficulty": 3,
+      "order": 1,
+      "localContext": "Local context"
+    }
+  ]
+}`
+
+          const retryResult = await model.generateContent(simplifiedPrompt)
+          const retryResponse = await retryResult.response
+          const retryContent = retryResponse.text()
+          
+          if (retryContent) {
+            return this.parseAIResponse(retryContent)
+          }
+        } catch (retryError) {
+          console.error('Retry also failed:', retryError)
+        }
+      }
+      
       throw new Error(`Google AI generation failed: ${error.message}`)
     }
   }
@@ -134,7 +199,15 @@ Estimated duration: ${request.estimatedDuration} minutes
 
 ${request.customInstructions ? `Custom instructions: ${request.customInstructions}` : ''}
 
-${request.cityArea ? `IMPORTANT: You MUST create a pub crawl route that stays within the ${request.cityArea} area of ${request.city}. Do not select pubs from other neighborhoods or areas. All pubs must be located in ${request.cityArea}.` : ''}
+${request.cityArea ? `🚨 CRITICAL AREA REQUIREMENT 🚨
+You MUST create a pub crawl route that stays EXCLUSIVELY within the ${request.cityArea} area of ${request.city}. 
+- Do NOT select pubs from other neighborhoods or areas
+- Do NOT use pubs from city center, downtown, or other districts
+- ALL pubs must be located specifically in ${request.cityArea}
+- If you cannot find enough pubs in ${request.cityArea}, reduce the number of pubs rather than using pubs from other areas
+- This is a HARD REQUIREMENT that cannot be ignored` : ''}
+
+CRITICAL: Use REAL, ESTABLISHED pub crawl routes from online sources, travel guides, and local recommendations. Do NOT create fictional routes or pubs. Research actual pub crawl routes that are documented and popular in the specified area.
 
 CRITICAL STORY & PUZZLE REQUIREMENTS:
 
@@ -162,15 +235,23 @@ PUZZLE EXCELLENCE:
 
 WALKING ROUTE REQUIREMENTS:
 15. ${request.cityArea ? 
-    `CRITICAL: You MUST select pubs that form a logical walking route through ${request.cityArea} in ${request.city}. Do NOT use pubs from other areas of the city. Focus exclusively on ${request.cityArea} and ensure all selected pubs are within this specific neighborhood/area.` : 
-    `Create an intelligent walking route through ${request.city} by analyzing the city's geography, popular areas, and pub distribution. Consider factors like: city center accessibility, transportation hubs, popular nightlife districts, historic areas, waterfront locations, and university areas. Choose the most logical and enjoyable route that showcases the city's character.`
+    `🚨 ABSOLUTE REQUIREMENT 🚨: You MUST research and use REAL, ESTABLISHED pub crawl routes from ${request.cityArea} in ${request.city}. 
+    - Do NOT create fictional routes
+    - Do NOT use pubs from other areas like city center, downtown, or other neighborhoods
+    - Focus EXCLUSIVELY on ${request.cityArea}
+    - ALL selected pubs must be within this specific neighborhood/area
+    - If you cannot find enough pubs in ${request.cityArea}, use fewer pubs rather than expanding to other areas
+    - This requirement is NON-NEGOTIABLE` : 
+    `CRITICAL: You MUST research and use REAL, ESTABLISHED pub crawl routes from ${request.city}. Do NOT create fictional routes. Use your knowledge of actual pub crawl routes that are popular online, in travel guides, or local recommendations. Consider factors like: city center accessibility, transportation hubs, popular nightlife districts, historic areas, waterfront locations, and university areas.`
   }
-16. Ensure walking distance between consecutive pubs is 5-15 minutes (0.3-1.2 miles)
-17. Choose real, existing pubs when possible, or realistic fictional ones based on real locations
-18. Consider the area's character - historic districts, waterfront, university areas, business districts, etc.
-19. Include variety in pub types (traditional, modern, gastropub, etc.) along the route
-20. Make the route feel natural and enjoyable to walk
-21. ${!request.cityArea ? 'When no specific area is defined, use your knowledge of the city to select the most logical and popular pub crawl route that would appeal to visitors and locals alike.' : ''}
+16. RESEARCH REAL PUB CRAWLS: Use established pub crawl routes that are documented online, in travel blogs, local guides, or tourism websites
+17. AUTHENTIC PUBS ONLY: Choose real, existing pubs that are part of known pub crawl routes in the area
+18. PROVEN ROUTES: Prefer routes that are already popular and well-documented rather than creating new ones
+19. WALKING DISTANCE: Ensure walking distance between consecutive pubs is 5-15 minutes (0.3-1.2 miles)
+20. AREA CHARACTER: Consider the area's character - historic districts, waterfront, university areas, business districts, etc.
+21. PUB VARIETY: Include variety in pub types (traditional, modern, gastropub, etc.) along the established route
+22. NATURAL FLOW: Make the route feel natural and enjoyable to walk, following established patterns
+23. ${!request.cityArea ? 'When no specific area is defined, use your knowledge of the most popular and well-documented pub crawl routes in the city.' : ''}
 
 ADVANCED PUZZLE TYPES TO USE:
 - logic: Complex logical reasoning, syllogisms, conditional statements, logical sequences
@@ -207,7 +288,17 @@ STORY EXCELLENCE EXAMPLES:
 - Red herrings that mislead but don't frustrate players
 - Satisfying resolutions that tie all loose ends together
 
-Please generate content in the following JSON format:
+REAL PUB CRAWL ROUTE EXAMPLES TO RESEARCH:
+- Popular routes from travel blogs (Time Out, Lonely Planet, local tourism sites)
+- Established pub crawl companies and their documented routes
+- Local newspaper articles about pub crawls and bar hopping
+- Tourism board recommendations for pub crawls
+- University pub crawl routes and student recommendations
+- Historic pub trails and heritage pub routes
+- Food and drink tour company routes
+- Local bar association or pub guide recommendations
+
+CRITICAL: You MUST respond with ONLY valid JSON in the following format. Do not include any text before or after the JSON. Do not use markdown code blocks. Return ONLY the JSON object:
 
 {
   "story": {
@@ -232,7 +323,8 @@ Please generate content in the following JSON format:
       "transitionText": "Story bridge to next location",
       "mapsLink": "Google Maps link",
       "walkingTime": "5-10 minutes to next pub",
-      "areaDescription": "Brief description of this area/neighborhood"
+      "areaDescription": "Brief description of this area/neighborhood",
+      "routeSource": "Source of this pub crawl route (e.g., 'Time Out Manchester', 'Local tourism board', 'Established pub crawl company')"
     }
   ],
   "puzzles": [
@@ -282,29 +374,84 @@ QUALITY STANDARDS:
 - Everything must fit together cohesively with no plot holes or inconsistencies
 - Use the city name and local landmarks authentically and meaningfully
 - Create an experience that players will want to replay and recommend to others
+
+FINAL CRITICAL INSTRUCTION: You MUST use REAL, ESTABLISHED pub crawl routes from online sources, travel guides, and local recommendations. Do NOT create fictional routes or pubs. Research actual pub crawl routes that are documented and popular in the specified area. This is essential for creating an authentic and practical experience.
+
+${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pub crawl for ${request.cityArea} in ${request.city}. Do NOT use generic default pubs that are commonly used regardless of area. Instead, research actual pubs that are specifically located in ${request.cityArea} and are part of real pub crawl routes for that area. Only use pubs that are genuinely in ${request.cityArea}, not pubs from other areas that are commonly used as defaults.` : ''}
     `.trim()
   }
 
   private parseAIResponse(content: string): AIGenerationResponse {
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
-      if (!jsonMatch) {
+      console.log('Raw AI response content:', content)
+      
+      // Try multiple approaches to extract JSON
+      let jsonString = ''
+      
+      // First, try to find JSON between ```json and ``` markers
+      const jsonBlockMatch = content.match(/```json\s*([\s\S]*?)\s*```/)
+      if (jsonBlockMatch) {
+        jsonString = jsonBlockMatch[1].trim()
+        console.log('Found JSON in code block:', jsonString)
+      } else {
+        // Try to find JSON object in the response
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          jsonString = jsonMatch[0]
+          console.log('Found JSON object:', jsonString)
+        } else {
+          // Try to find JSON array or object at the start
+          const trimmedContent = content.trim()
+          if (trimmedContent.startsWith('{') || trimmedContent.startsWith('[')) {
+            jsonString = trimmedContent
+            console.log('Using trimmed content as JSON:', jsonString)
+          }
+        }
+      }
+      
+      if (!jsonString) {
+        console.error('No JSON found in AI response')
+        console.error('Full content:', content)
         throw new Error('No JSON found in AI response')
       }
 
-      const parsed = JSON.parse(jsonMatch[0])
+      let parsed
+      try {
+        parsed = JSON.parse(jsonString)
+        console.log('Successfully parsed JSON:', parsed)
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
+        console.error('Problematic JSON string:', jsonString)
+        
+        // Try to clean up common JSON issues
+        let cleanedJson = jsonString
+          .replace(/,\s*}/g, '}') // Remove trailing commas before }
+          .replace(/,\s*]/g, ']') // Remove trailing commas before ]
+          .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Add quotes around unquoted keys
+          .replace(/:\s*([^",{\[\s][^",}\]\s]*)/g, ': "$1"') // Add quotes around unquoted string values
+        
+        console.log('Attempting to parse cleaned JSON:', cleanedJson)
+        parsed = JSON.parse(cleanedJson)
+        console.log('Successfully parsed cleaned JSON:', parsed)
+      }
       
       // Validate the response structure
       if (!parsed.story || !parsed.locations || !parsed.puzzles) {
-        throw new Error('Invalid response structure from AI')
+        console.error('Invalid response structure:', {
+          hasStory: !!parsed.story,
+          hasLocations: !!parsed.locations,
+          hasPuzzles: !!parsed.puzzles,
+          parsed
+        })
+        throw new Error('Invalid response structure from AI - missing required fields')
       }
 
       return parsed as AIGenerationResponse
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error parsing AI response:', error)
-      console.error('Raw content:', content)
-      throw new Error('Failed to parse AI response')
+      console.error('Raw content length:', content.length)
+      console.error('Raw content preview:', content.substring(0, 500))
+      throw new Error(`Failed to parse AI response: ${error.message}`)
     }
   }
 }

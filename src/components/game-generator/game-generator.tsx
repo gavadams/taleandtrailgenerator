@@ -83,7 +83,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         provider: aiProvider,
         theme: generationState.gameData.theme!,
         city: generationState.gameData.city!,
-        cityArea: generationState.gameData.cityArea,
+        cityArea: (generationState.gameData as any).cityArea,
         difficulty: generationState.gameData.difficulty!,
         pubCount: generationState.gameData.pubCount!,
         puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
@@ -105,7 +105,15 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         const errorData = await response.json()
         console.error('API Error:', errorData)
         console.error('Response status:', response.status)
-        throw new Error(errorData.error || 'Failed to generate game content')
+        
+        // Provide more helpful error messages
+        if (errorData.error?.includes('parse AI response')) {
+          throw new Error('The AI generated content in an unexpected format. Please try again with different settings.')
+        } else if (errorData.error?.includes('API key')) {
+          throw new Error('AI service configuration issue. Please check your API keys.')
+        } else {
+          throw new Error(errorData.error || 'Failed to generate game content. Please try again.')
+        }
       }
 
       const responseData = await response.json()
@@ -116,19 +124,19 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
           ...prev.gameData,
           content: {
             intro: responseData.story.intro,
-            locations: responseData.locations.map((loc, index) => ({
+            locations: responseData.locations.map((loc: any, index: number) => ({
               ...loc,
               id: `loc-${index}`,
               puzzles: responseData.puzzles
-                .filter(p => p.order === index + 1)
-                .map((puzzle, pIndex) => ({
+                .filter((p: any) => p.order === index + 1)
+                .map((puzzle: any, pIndex: number) => ({
                   ...puzzle,
                   id: `puzzle-${index}-${pIndex}`,
                 }))
             })),
             resolution: responseData.story.resolution,
           },
-          locationPlaceholders: responseData.locations.reduce((acc, loc, index) => ({
+          locationPlaceholders: responseData.locations.reduce((acc: any, loc: any, index: number) => ({
             ...acc,
             [loc.placeholderName]: {
               name: loc.actualName || `Pub ${index + 1}`,
