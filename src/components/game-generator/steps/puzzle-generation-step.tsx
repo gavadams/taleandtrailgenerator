@@ -31,7 +31,7 @@ export function PuzzleGenerationStep({ gameData, onComplete }: PuzzleGenerationS
     { value: 'observation', label: 'Observation', description: 'Visual clues, details, patterns' },
     { value: 'cipher', label: 'Cipher/Code', description: 'Encrypted messages, codes, symbols' },
     { value: 'deduction', label: 'Deduction', description: 'Eliminate suspects, find contradictions' },
-    { value: 'local-knowledge', label: 'Local Knowledge', description: 'Landmarks, street names, pub features' },
+    { value: 'local', label: 'Local Knowledge', description: 'Landmarks, street names, pub features' },
   ]
 
   const addPuzzle = (locationIndex: number) => {
