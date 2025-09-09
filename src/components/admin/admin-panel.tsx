@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Users, Crown, User, Plus, Trash2, ArrowLeft } from 'lucide-react'
+import { Users, Crown, User, Plus, Trash2, ArrowLeft, BookOpen } from 'lucide-react'
 // Removed direct client import - using API routes instead
 import { toast } from 'sonner'
+import { TemplateManagement } from './template-management'
 
 interface UserProfile {
   id: string
@@ -31,6 +32,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
   const [newUserRole, setNewUserRole] = useState<'user' | 'admin'>('user')
   const [addingUser, setAddingUser] = useState(false)
   const [cleaningUp, setCleaningUp] = useState(false)
+  const [activeTab, setActiveTab] = useState<'users' | 'templates' | 'cleanup'>('users')
 
   useEffect(() => {
     loadUsers()
@@ -211,18 +213,48 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center">
-                  <Users className="h-5 w-5 mr-2" />
-                  User Management
-                </CardTitle>
-                <CardDescription>
-                  Manage user roles and permissions
-                </CardDescription>
-              </div>
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+          <Button
+            variant={activeTab === 'users' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('users')}
+            className="flex items-center space-x-2"
+          >
+            <Users className="h-4 w-4" />
+            <span>Users</span>
+          </Button>
+          <Button
+            variant={activeTab === 'templates' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('templates')}
+            className="flex items-center space-x-2"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Templates</span>
+          </Button>
+          <Button
+            variant={activeTab === 'cleanup' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('cleanup')}
+            className="flex items-center space-x-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Cleanup</span>
+          </Button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'users' && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    User Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage user roles and permissions
+                  </CardDescription>
+                </div>
               <div className="flex items-center space-x-2">
                 <Button
                   onClick={cleanupOrphanedUsers}
@@ -335,6 +367,43 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {activeTab === 'templates' && (
+          <TemplateManagement />
+        )}
+
+        {activeTab === 'cleanup' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Trash2 className="h-5 w-5 mr-2" />
+                System Cleanup
+              </CardTitle>
+              <CardDescription>
+                Clean up orphaned data and optimize the system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-semibold mb-2">Cleanup Orphaned Users</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Remove user profiles that don't have corresponding auth users
+                  </p>
+                  <Button
+                    onClick={cleanupOrphanedUsers}
+                    disabled={cleaningUp}
+                    variant="outline"
+                    className="flex items-center space-x-2"
+                  >
+                    <span>{cleaningUp ? 'Cleaning...' : 'Cleanup Orphaned Users'}</span>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

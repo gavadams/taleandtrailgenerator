@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Wand2 } from 'lucide-react'
 import { GameSetupStep } from './steps/game-setup-step'
+import { TemplateSelectionStep } from './steps/template-selection-step'
 import { CityAreaStep } from './steps/city-area-step'
 import { StoryGenerationStep } from './steps/story-generation-step'
 import { LocationSetupStep } from './steps/location-setup-step'
@@ -28,6 +29,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
     currentStep: 0,
     steps: [
       { id: 'setup', title: 'Game Setup', description: 'Choose theme, city, and settings', completed: false },
+      { id: 'template', title: 'Template Selection', description: 'Choose a template or create custom', completed: false },
       { id: 'area', title: 'City Area', description: 'Select specific area/neighborhood', completed: false },
       { id: 'story', title: 'Story Generation', description: 'Generate overarching narrative', completed: false },
       { id: 'locations', title: 'Location Setup', description: 'Configure pub locations', completed: false },
@@ -79,21 +81,42 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
     setGenerationState(prev => ({ ...prev, isLoading: true }))
 
     try {
-      const request = {
-        provider: aiProvider,
-        theme: generationState.gameData.theme!,
-        city: generationState.gameData.city!,
-        cityArea: (generationState.gameData as any).cityArea,
-        difficulty: generationState.gameData.difficulty!,
-        pubCount: generationState.gameData.pubCount!,
-        puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
-        estimatedDuration: generationState.gameData.estimatedDuration!,
+      // Check if using a template
+      const useTemplate = (generationState.gameData as any).useTemplate
+      const templateId = (generationState.gameData as any).templateId
+
+      let request: any
+      let apiEndpoint: string
+
+      if (useTemplate && templateId) {
+        // Template-based generation
+        request = {
+          templateId,
+          city: generationState.gameData.city!,
+          cityArea: (generationState.gameData as any).cityArea,
+          provider: aiProvider,
+        }
+        apiEndpoint = '/api/generate-from-template'
+      } else {
+        // Custom generation
+        request = {
+          provider: aiProvider,
+          theme: generationState.gameData.theme!,
+          city: generationState.gameData.city!,
+          cityArea: (generationState.gameData as any).cityArea,
+          difficulty: generationState.gameData.difficulty!,
+          pubCount: generationState.gameData.pubCount!,
+          puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
+          estimatedDuration: generationState.gameData.estimatedDuration!,
+        }
+        apiEndpoint = '/api/generate-game'
       }
       
       console.log('Frontend sending request:', request)
-      console.log('Custom area being sent:', request.cityArea)
+      console.log('Using template:', useTemplate)
+      console.log('API endpoint:', apiEndpoint)
 
-      const response = await fetch('/api/generate-game', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -256,7 +279,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         </Card>
 
         {/* AI Provider Selection */}
-        {generationState.currentStep >= 1 && generationState.currentStep <= 3 && (
+        {generationState.currentStep >= 2 && generationState.currentStep <= 4 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center">
@@ -302,13 +325,19 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
           )}
 
           {generationState.currentStep === 1 && (
+            <TemplateSelectionStep
+              onComplete={(data) => handleStepComplete('template', data)}
+            />
+          )}
+
+          {generationState.currentStep === 2 && (
             <CityAreaStep
               initialData={generationState.gameData}
               onComplete={(data) => handleStepComplete('area', data)}
             />
           )}
 
-          {generationState.currentStep === 2 && (
+          {generationState.currentStep === 3 && (
             <StoryGenerationStep
               gameData={generationState.gameData}
               onComplete={(data) => handleStepComplete('story', data)}
@@ -317,21 +346,21 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
             />
           )}
 
-          {generationState.currentStep === 3 && (
+          {generationState.currentStep === 4 && (
             <LocationSetupStep
               gameData={generationState.gameData}
               onComplete={(data) => handleStepComplete('locations', data)}
             />
           )}
 
-          {generationState.currentStep === 4 && (
+          {generationState.currentStep === 5 && (
             <PuzzleGenerationStep
               gameData={generationState.gameData}
               onComplete={(data) => handleStepComplete('puzzles', data)}
             />
           )}
 
-          {generationState.currentStep === 5 && (
+          {generationState.currentStep === 6 && (
             <ReviewStep
               gameData={generationState.gameData}
               onSave={handleSaveGame}
