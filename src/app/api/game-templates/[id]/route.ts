@@ -24,7 +24,15 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(template)
+    // Transform the data to match the expected format
+    const transformedTemplate = {
+      ...template,
+      characterTypes: template.character_types || [],
+      puzzleTypes: template.puzzle_types || [],
+      storyFramework: template.story_framework || ''
+    }
+
+    return NextResponse.json(transformedTemplate)
   } catch (error: any) {
     console.error('Error in get template API:', error)
     return NextResponse.json(

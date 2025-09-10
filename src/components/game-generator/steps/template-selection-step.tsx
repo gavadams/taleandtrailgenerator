@@ -152,11 +152,11 @@ export function TemplateSelectionStep({ onComplete }: TemplateSelectionStepProps
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                           <div className="flex items-center space-x-1">
                             <Users className="h-4 w-4" />
-                            <span>{template.characterTypes.length} character types</span>
+                            <span>{template.characterTypes?.length || 0} character types</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Puzzle className="h-4 w-4" />
-                            <span>{template.puzzleTypes.length} puzzle types</span>
+                            <span>{template.puzzleTypes?.length || 0} puzzle types</span>
                           </div>
                         </div>
                         

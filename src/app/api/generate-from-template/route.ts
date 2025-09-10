@@ -42,6 +42,14 @@ export async function POST(request: NextRequest) {
 
     console.log('Using template:', template.name)
 
+    // Transform template data to match expected format
+    const transformedTemplate = {
+      ...template,
+      characterTypes: template.character_types || [],
+      puzzleTypes: template.puzzle_types || [],
+      storyFramework: template.story_framework || ''
+    }
+
     // Create AI service
     let aiService
     try {
@@ -63,7 +71,7 @@ export async function POST(request: NextRequest) {
       pubCount: 5, // Default, can be made configurable
       puzzlesPerPub: 2, // Default, can be made configurable
       estimatedDuration: 120, // Default, can be made configurable
-      customInstructions: buildTemplateInstructions(template, customInstructions)
+      customInstructions: buildTemplateInstructions(transformedTemplate, customInstructions)
     }
 
     console.log('Generating game from template...')
@@ -73,9 +81,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ...response,
       template: {
-        id: template.id,
-        name: template.name,
-        description: template.description
+        id: transformedTemplate.id,
+        name: transformedTemplate.name,
+        description: transformedTemplate.description
       }
     })
   } catch (error: any) {

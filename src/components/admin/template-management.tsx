@@ -343,16 +343,16 @@ export function TemplateManagement() {
                   <p className="text-gray-600 mb-3">{template.description}</p>
                   
                   <div className="space-y-2">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4" />
-                        <span>{template.characterTypes.length} character types</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Puzzle className="h-4 w-4" />
-                        <span>{template.puzzleTypes.length} puzzle types</span>
-                      </div>
-                    </div>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <Users className="h-4 w-4" />
+                            <span>{template.characterTypes?.length || 0} character types</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Puzzle className="h-4 w-4" />
+                            <span>{template.puzzleTypes?.length || 0} puzzle types</span>
+                          </div>
+                        </div>
                     
                     <div className="text-sm">
                       <p className="font-medium text-gray-700 mb-1">Story Framework:</p>

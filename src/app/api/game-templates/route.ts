@@ -11,6 +11,14 @@ export async function GET() {
       .select('*')
       .order('name', { ascending: true })
 
+    // Transform the data to match the expected format
+    const transformedTemplates = templates?.map(template => ({
+      ...template,
+      characterTypes: template.character_types || [],
+      puzzleTypes: template.puzzle_types || [],
+      storyFramework: template.story_framework || ''
+    })) || []
+
     if (error) {
       console.error('Error fetching game templates:', error)
       return NextResponse.json(
@@ -19,7 +27,7 @@ export async function GET() {
       )
     }
 
-    return NextResponse.json(templates)
+    return NextResponse.json(transformedTemplates)
   } catch (error: any) {
     console.error('Error in game templates API:', error)
     return NextResponse.json(
