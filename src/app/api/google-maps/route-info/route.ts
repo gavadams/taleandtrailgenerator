@@ -25,13 +25,30 @@ export async function POST(request: NextRequest) {
     // Helper function to create a more specific location name
     const getLocationName = (loc: any) => {
       const cityContext = city ? `, ${city}, UK` : ', UK'
-      if (loc.actualName) {
-        // Add city context to make location more specific
-        return `${loc.actualName}${cityContext}`
+      
+      // Prefer actualName, then placeholderName
+      let locationName = loc.actualName || loc.placeholderName
+      
+      // If we have a generic name, try to make it more specific by adding "pub" and city
+      if (locationName && (
+        locationName.toLowerCase().includes('pub') && 
+        (locationName.toLowerCase().includes('one') || 
+         locationName.toLowerCase().includes('1') ||
+         locationName.toLowerCase().includes('two') ||
+         locationName.toLowerCase().includes('2') ||
+         locationName.toLowerCase().includes('three') ||
+         locationName.toLowerCase().includes('3') ||
+         locationName.toLowerCase().includes('test'))
+      )) {
+        // For generic pub names, try to find a real pub in the area
+        console.log(`Generic pub name detected: ${locationName}, using city area search`)
+        return `${city || 'pub'}, UK`
       }
-      if (loc.placeholderName) {
-        return `${loc.placeholderName}${cityContext}`
+      
+      if (locationName && locationName.trim() !== '') {
+        return `${locationName}${cityContext}`
       }
+      
       // If we only have generic names, we can't get accurate routes
       return null
     }
@@ -50,6 +67,20 @@ export async function POST(request: NextRequest) {
         totalTime: `${estimatedTime} minutes (estimated)`,
         isValid: false,
         warnings: ['Location names not specific enough for accurate routing - using estimated values']
+      })
+    }
+    
+    // If origin and destination are the same (city only), use estimated values
+    if (origin === destination) {
+      console.log('Origin and destination are the same, using estimated values')
+      const estimatedDistance = locations.length * 0.3
+      const estimatedTime = locations.length * 8
+      
+      return NextResponse.json({
+        totalDistance: `${estimatedDistance.toFixed(1)} miles (estimated)`,
+        totalTime: `${estimatedTime} minutes (estimated)`,
+        isValid: false,
+        warnings: ['All locations resolved to the same area - using estimated values']
       })
     }
     

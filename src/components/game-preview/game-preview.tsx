@@ -1519,7 +1519,10 @@ npm                  <div className="mt-4 space-y-3">
 
           <TabsContent value="route" className="space-y-4">
             <RouteMap 
-              locations={editedGame.content.locations || []}
+              locations={(editedGame.content.locations || []).map(location => ({
+                ...location,
+                actualName: location.actualName || (editedGame.locationPlaceholders?.[location.placeholderName] as any)?.name || location.placeholderName
+              }))}
               city={editedGame.city}
               cityArea={undefined}
               gameId={editedGame.id}
