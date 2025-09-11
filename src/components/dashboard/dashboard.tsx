@@ -15,13 +15,14 @@ interface DashboardProps {
   onCreateGame: () => void
   onEditGame: (game: Game) => void
   onPreviewGame: (game: Game) => void
+  onDuplicateGame: (game: Game) => void
   onAdminPanel?: () => void
   isAdmin?: boolean
   games: Game[]
   setGames: (games: Game[] | ((prev: Game[]) => Game[])) => void
 }
 
-export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPanel, isAdmin, games, setGames }: DashboardProps) {
+export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onDuplicateGame, onAdminPanel, isAdmin, games, setGames }: DashboardProps) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -71,6 +72,31 @@ export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPane
     } catch (error) {
       toast.error('Failed to delete game')
       console.error('Error deleting game:', error)
+    }
+  }
+
+  const handleDuplicateGame = async (game: Game) => {
+    if (!user) return
+
+    try {
+      const response = await fetch('/api/games/duplicate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ gameId: game.id }),
+      })
+
+      if (response.ok) {
+        const duplicatedGame = await response.json()
+        setGames(prev => [duplicatedGame, ...prev])
+        toast.success(`Game "${game.title}" duplicated successfully`)
+      } else {
+        toast.error('Failed to duplicate game')
+      }
+    } catch (error) {
+      toast.error('Failed to duplicate game')
+      console.error('Error duplicating game:', error)
     }
   }
 
@@ -207,6 +233,7 @@ export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPane
                 onEdit={onEditGame}
                 onDelete={handleDeleteGame}
                 onPreview={onPreviewGame}
+                onDuplicate={handleDuplicateGame}
               />
             ))}
           </div>

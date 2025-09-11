@@ -80,6 +80,11 @@ export default function HomePage() {
     setViewMode('preview')
   }
 
+  const handleDuplicateGame = (game: Game) => {
+    // The duplication is handled in the Dashboard component
+    // This is just a placeholder to satisfy the interface
+  }
+
   const handleBackToDashboard = () => {
     setViewMode('dashboard')
     setEditingGame(null)
@@ -95,6 +100,7 @@ export default function HomePage() {
           onCreateGame={handleCreateGame}
           onEditGame={handleEditGame}
           onPreviewGame={handlePreviewGame}
+          onDuplicateGame={handleDuplicateGame}
           onAdminPanel={() => setViewMode('admin')}
           isAdmin={isUserAdmin}
           games={games}

@@ -4,7 +4,7 @@ import { Game } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Clock, Puzzle, Eye, Edit, Trash2 } from 'lucide-react'
+import { MapPin, Clock, Puzzle, Eye, Edit, Trash2, Copy } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface GameCardProps {
@@ -12,9 +12,10 @@ interface GameCardProps {
   onEdit: (game: Game) => void
   onDelete: (game: Game) => void
   onPreview: (game: Game) => void
+  onDuplicate: (game: Game) => void
 }
 
-export function GameCard({ game, onEdit, onDelete, onPreview }: GameCardProps) {
+export function GameCard({ game, onEdit, onDelete, onPreview, onDuplicate }: GameCardProps) {
   const getThemeColor = (theme: string) => {
     switch (theme) {
       case 'mystery': return 'bg-purple-100 text-purple-800'
@@ -52,13 +53,23 @@ export function GameCard({ game, onEdit, onDelete, onPreview }: GameCardProps) {
               variant="ghost"
               size="sm"
               onClick={() => onPreview(game)}
+              title="Preview game"
             >
               <Eye className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => onDuplicate(game)}
+              title="Duplicate game"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onEdit(game)}
+              title="Edit game"
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -67,6 +78,7 @@ export function GameCard({ game, onEdit, onDelete, onPreview }: GameCardProps) {
               size="sm"
               onClick={() => onDelete(game)}
               className="text-red-600 hover:text-red-700"
+              title="Delete game"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
