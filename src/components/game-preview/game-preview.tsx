@@ -85,6 +85,48 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
       setTempInputValue(editedGame.content?.resolution?.title || '')
     } else if (field === 'resolution-content') {
       setTempInputValue(editedGame.content?.resolution?.content || '')
+    } else if (field === 'intro-maps-link') {
+      setTempInputValue(editedGame.content?.intro?.mapsLink || '')
+    } else if (field.startsWith('location-maps-link-')) {
+      const locationId = field.replace('location-maps-link-', '')
+      const location = editedGame.content?.locations?.find((loc: any) => loc.id === locationId)
+      setTempInputValue(location?.mapsLink || '')
+    } else if (field === 'intro-video-link') {
+      setTempInputValue(editedGame.content?.intro?.videoLink || '')
+    } else if (field === 'intro-image-link') {
+      setTempInputValue(editedGame.content?.intro?.imageLink || '')
+    } else if (field.startsWith('location-video-link-')) {
+      const locationId = field.replace('location-video-link-', '')
+      const location = editedGame.content?.locations?.find((loc: any) => loc.id === locationId)
+      setTempInputValue(location?.videoLink || '')
+    } else if (field.startsWith('location-image-link-')) {
+      const locationId = field.replace('location-image-link-', '')
+      const location = editedGame.content?.locations?.find((loc: any) => loc.id === locationId)
+      setTempInputValue(location?.imageLink || '')
+    } else if (field.startsWith('location-narrative-')) {
+      const locationId = field.replace('location-narrative-', '')
+      const location = editedGame.content?.locations?.find((loc: any) => loc.id === locationId)
+      setTempInputValue(location?.narrative || '')
+    } else if (field.startsWith('puzzle-narrative-')) {
+      const puzzleId = field.replace('puzzle-narrative-', '')
+      const puzzle = editedGame.content?.locations?.flatMap(loc => loc.puzzles || []).find(p => p.id === puzzleId)
+      setTempInputValue(puzzle?.narrative || '')
+    } else if (field.startsWith('puzzle-video-link-')) {
+      const puzzleId = field.replace('puzzle-video-link-', '')
+      const puzzle = editedGame.content?.locations?.flatMap(loc => loc.puzzles || []).find(p => p.id === puzzleId)
+      setTempInputValue(puzzle?.videoLink || '')
+    } else if (field.startsWith('puzzle-image-link-')) {
+      const puzzleId = field.replace('puzzle-image-link-', '')
+      const puzzle = editedGame.content?.locations?.flatMap(loc => loc.puzzles || []).find(p => p.id === puzzleId)
+      setTempInputValue(puzzle?.imageLink || '')
+    } else if (field.startsWith('puzzle-clues-')) {
+      const puzzleId = field.replace('puzzle-clues-', '')
+      const puzzle = editedGame.content?.locations?.flatMap(loc => loc.puzzles || []).find(p => p.id === puzzleId)
+      setTempInputValue(puzzle?.clues?.join('\n') || '')
+    } else if (field.startsWith('location-transition-')) {
+      const locationId = field.replace('location-transition-', '')
+      const location = editedGame.content?.locations?.find((loc: any) => loc.id === locationId)
+      setTempInputValue(location?.transitionText || '')
     } else if (field.startsWith('puzzle-title-')) {
       const puzzleId = field.replace('puzzle-title-', '')
       const puzzle = editedGame.content?.locations?.flatMap(loc => loc.puzzles || []).find(p => p.id === puzzleId)
@@ -134,6 +176,160 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
         if (!newGame.content) newGame.content = {}
         if (!newGame.content.resolution) newGame.content.resolution = {}
         newGame.content.resolution.content = value
+      } else if (field === 'intro-maps-link') {
+        if (!newGame.content) newGame.content = {}
+        if (!newGame.content.intro) newGame.content.intro = {}
+        newGame.content.intro.mapsLink = value
+      } else if (field.startsWith('location-maps-link-')) {
+        const locationId = field.replace('location-maps-link-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.id === locationId) {
+                return { ...loc, mapsLink: value }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field === 'intro-video-link') {
+        if (!newGame.content) newGame.content = {}
+        if (!newGame.content.intro) newGame.content.intro = {}
+        newGame.content.intro.videoLink = value
+      } else if (field === 'intro-image-link') {
+        if (!newGame.content) newGame.content = {}
+        if (!newGame.content.intro) newGame.content.intro = {}
+        newGame.content.intro.imageLink = value
+      } else if (field.startsWith('location-video-link-')) {
+        const locationId = field.replace('location-video-link-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.id === locationId) {
+                return { ...loc, videoLink: value }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field.startsWith('location-image-link-')) {
+        const locationId = field.replace('location-image-link-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.id === locationId) {
+                return { ...loc, imageLink: value }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field.startsWith('location-narrative-')) {
+        const locationId = field.replace('location-narrative-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.id === locationId) {
+                return { ...loc, narrative: value }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field.startsWith('puzzle-narrative-')) {
+        const puzzleId = field.replace('puzzle-narrative-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.puzzles) {
+                const updatedPuzzles = loc.puzzles.map((puzzle: any) => {
+                  if (puzzle.id === puzzleId) {
+                    return { ...puzzle, narrative: value }
+                  }
+                  return puzzle
+                })
+                return { ...loc, puzzles: updatedPuzzles }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field.startsWith('puzzle-video-link-')) {
+        const puzzleId = field.replace('puzzle-video-link-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.puzzles) {
+                const updatedPuzzles = loc.puzzles.map((puzzle: any) => {
+                  if (puzzle.id === puzzleId) {
+                    return { ...puzzle, videoLink: value }
+                  }
+                  return puzzle
+                })
+                return { ...loc, puzzles: updatedPuzzles }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field.startsWith('puzzle-image-link-')) {
+        const puzzleId = field.replace('puzzle-image-link-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.puzzles) {
+                const updatedPuzzles = loc.puzzles.map((puzzle: any) => {
+                  if (puzzle.id === puzzleId) {
+                    return { ...puzzle, imageLink: value }
+                  }
+                  return puzzle
+                })
+                return { ...loc, puzzles: updatedPuzzles }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field.startsWith('puzzle-clues-')) {
+        const puzzleId = field.replace('puzzle-clues-', '')
+        const clues = value.split('\n').filter(clue => clue.trim() !== '') as string[]
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.puzzles) {
+                const updatedPuzzles = loc.puzzles.map((puzzle: any) => {
+                  if (puzzle.id === puzzleId) {
+                    return { ...puzzle, clues: clues }
+                  }
+                  return puzzle
+                })
+                return { ...loc, puzzles: updatedPuzzles }
+              }
+              return loc
+            })
+          }
+        }
+      } else if (field.startsWith('location-transition-')) {
+        const locationId = field.replace('location-transition-', '')
+        if (newGame.content?.locations) {
+          newGame.content = {
+            ...newGame.content,
+            locations: newGame.content.locations.map((loc: any) => {
+              if (loc.id === locationId) {
+                return { ...loc, transitionText: value }
+              }
+              return loc
+            })
+          }
+        }
       } else if (field.startsWith('location-name-')) {
         const locationId = field.replace('location-name-', '')
         
@@ -230,6 +426,28 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
     if (onSave) {
       onSave(editedGame)
       setIsEditing(false) // Auto-exit edit mode after saving
+    }
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setTempInputValue(e.target.value)
+  }
+
+  const handleInputBlur = (field: string) => {
+    if (tempInputValue.trim() !== '') {
+      handleSaveEdit(field, tempInputValue.trim())
+    }
+  }
+
+  const handleInputKeyDown = (e: React.KeyboardEvent, field: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (tempInputValue.trim() !== '') {
+        handleSaveEdit(field, tempInputValue.trim())
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelEdit()
     }
   }
 
@@ -551,18 +769,142 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
                       )}
                     </div>
                   )}
-                  {editedGame.content?.intro?.mapsLink && (
-                    <div className="mt-4">
-                      <a
-                        href={editedGame.content.intro.mapsLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline"
-                      >
-                        Google Maps Link
-                      </a>
+npm                  <div className="mt-4 space-y-3">
+                    {/* Google Maps Link */}
+                    <div>
+                      {isEditing && editingField === 'intro-maps-link' ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={tempInputValue}
+                            onChange={handleInputChange}
+                            onBlur={() => handleInputBlur('intro-maps-link')}
+                            onKeyDown={(e) => handleInputKeyDown(e, 'intro-maps-link')}
+                            placeholder="Enter Google Maps URL"
+                            className="w-full"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleSaveEdit('intro-maps-link', tempInputValue)}>
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          {editedGame.content?.intro?.mapsLink ? (
+                            <a
+                              href={editedGame.content.intro.mapsLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                              Google Maps Link
+                            </a>
+                          ) : (
+                            <span className="text-gray-500 italic">No Google Maps link</span>
+                          )}
+                          {isEditing && (
+                            <Button size="sm" variant="ghost" onClick={() => handleEdit('intro-maps-link')}>
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Video Link */}
+                    <div>
+                      {isEditing && editingField === 'intro-video-link' ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={tempInputValue}
+                            onChange={handleInputChange}
+                            onBlur={() => handleInputBlur('intro-video-link')}
+                            onKeyDown={(e) => handleInputKeyDown(e, 'intro-video-link')}
+                            placeholder="Enter Video URL"
+                            className="w-full"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleSaveEdit('intro-video-link', tempInputValue)}>
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          {editedGame.content?.intro?.videoLink ? (
+                            <a
+                              href={editedGame.content.intro.videoLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-red-600 hover:text-red-800 underline"
+                            >
+                              Video Link
+                            </a>
+                          ) : (
+                            <span className="text-gray-500 italic">No video link</span>
+                          )}
+                          {isEditing && (
+                            <Button size="sm" variant="ghost" onClick={() => handleEdit('intro-video-link')}>
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Image Link */}
+                    <div>
+                      {isEditing && editingField === 'intro-image-link' ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={tempInputValue}
+                            onChange={handleInputChange}
+                            onBlur={() => handleInputBlur('intro-image-link')}
+                            onKeyDown={(e) => handleInputKeyDown(e, 'intro-image-link')}
+                            placeholder="Enter Image URL"
+                            className="w-full"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleSaveEdit('intro-image-link', tempInputValue)}>
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          {editedGame.content?.intro?.imageLink ? (
+                            <a
+                              href={editedGame.content.intro.imageLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-600 hover:text-green-800 underline"
+                            >
+                              Image Link
+                            </a>
+                          ) : (
+                            <span className="text-gray-500 italic">No image link</span>
+                          )}
+                          {isEditing && (
+                            <Button size="sm" variant="ghost" onClick={() => handleEdit('intro-image-link')}>
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -739,7 +1081,36 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <div className="prose max-w-none">
-                            <p className="whitespace-pre-wrap">{puzzle.narrative}</p>
+                            {isEditing && editingField === `puzzle-narrative-${puzzle.id}` ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={tempInputValue}
+                                  onChange={handleInputChange}
+                                  onBlur={() => handleInputBlur(`puzzle-narrative-${puzzle.id}`)}
+                                  onKeyDown={(e) => handleInputKeyDown(e, `puzzle-narrative-${puzzle.id}`)}
+                                  placeholder="Enter puzzle narrative"
+                                  className="min-h-24"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`puzzle-narrative-${puzzle.id}`, tempInputValue)}>
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-start justify-between">
+                                <p className="whitespace-pre-wrap flex-1">{puzzle.narrative}</p>
+                                {isEditing && (
+                                  <Button size="sm" variant="ghost" onClick={() => handleEdit(`puzzle-narrative-${puzzle.id}`)}>
+                                    <Edit3 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="prose max-w-none">
                             {isEditing && editingField === `puzzle-content-${puzzle.id}` ? (
@@ -799,16 +1170,143 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
                             )}
                           </div>
                           
-                          {puzzle.clues && puzzle.clues.length > 0 && (
+                          <div>
+                            {isEditing && editingField === `puzzle-clues-${puzzle.id}` ? (
+                              <div className="space-y-2">
+                                <h4 className="font-medium mb-2">Clues:</h4>
+                                <Textarea
+                                  value={tempInputValue}
+                                  onChange={handleInputChange}
+                                  onBlur={() => handleInputBlur(`puzzle-clues-${puzzle.id}`)}
+                                  onKeyDown={(e) => handleInputKeyDown(e, `puzzle-clues-${puzzle.id}`)}
+                                  placeholder="Enter clues, one per line"
+                                  className="min-h-20"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`puzzle-clues-${puzzle.id}`, tempInputValue)}>
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium mb-2">Clues:</h4>
+                                  {puzzle.clues && puzzle.clues.length > 0 ? (
+                                    <ol className="list-decimal list-inside space-y-1">
+                                      {puzzle.clues.map((clue, cIndex) => (
+                                        <li key={cIndex} className="text-sm">{clue}</li>
+                                      ))}
+                                    </ol>
+                                  ) : (
+                                    <p className="text-gray-500 italic text-sm">No clues available</p>
+                                  )}
+                                </div>
+                                {isEditing && (
+                                  <Button size="sm" variant="ghost" onClick={() => handleEdit(`puzzle-clues-${puzzle.id}`)}>
+                                    <Edit3 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Puzzle Video and Image Links */}
+                          <div className="space-y-3">
+                            {/* Video Link */}
                             <div>
-                              <h4 className="font-medium mb-2">Clues:</h4>
-                              <ol className="list-decimal list-inside space-y-1">
-                                {puzzle.clues.map((clue, cIndex) => (
-                                  <li key={cIndex} className="text-sm">{clue}</li>
-                                ))}
-                              </ol>
+                              {isEditing && editingField === `puzzle-video-link-${puzzle.id}` ? (
+                                <div className="space-y-2">
+                                  <Input
+                                    value={tempInputValue}
+                                    onChange={handleInputChange}
+                                    onBlur={() => handleInputBlur(`puzzle-video-link-${puzzle.id}`)}
+                                    onKeyDown={(e) => handleInputKeyDown(e, `puzzle-video-link-${puzzle.id}`)}
+                                    placeholder="Enter Video URL"
+                                    className="w-full"
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`puzzle-video-link-${puzzle.id}`, tempInputValue)}>
+                                      <Check className="h-3 w-3" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between">
+                                  {puzzle.videoLink ? (
+                                    <a
+                                      href={puzzle.videoLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-red-600 hover:text-red-800 underline text-sm"
+                                    >
+                                      Video Link
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-500 italic text-sm">No video link</span>
+                                  )}
+                                  {isEditing && (
+                                    <Button size="sm" variant="ghost" onClick={() => handleEdit(`puzzle-video-link-${puzzle.id}`)}>
+                                      <Edit3 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          )}
+
+                            {/* Image Link */}
+                            <div>
+                              {isEditing && editingField === `puzzle-image-link-${puzzle.id}` ? (
+                                <div className="space-y-2">
+                                  <Input
+                                    value={tempInputValue}
+                                    onChange={handleInputChange}
+                                    onBlur={() => handleInputBlur(`puzzle-image-link-${puzzle.id}`)}
+                                    onKeyDown={(e) => handleInputKeyDown(e, `puzzle-image-link-${puzzle.id}`)}
+                                    placeholder="Enter Image URL"
+                                    className="w-full"
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`puzzle-image-link-${puzzle.id}`, tempInputValue)}>
+                                      <Check className="h-3 w-3" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between">
+                                  {puzzle.imageLink ? (
+                                    <a
+                                      href={puzzle.imageLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-green-600 hover:text-green-800 underline text-sm"
+                                    >
+                                      Image Link
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-500 italic text-sm">No image link</span>
+                                  )}
+                                  {isEditing && (
+                                    <Button size="sm" variant="ghost" onClick={() => handleEdit(`puzzle-image-link-${puzzle.id}`)}>
+                                      <Edit3 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
                           {showAnswers && (
                             <div className="p-3 bg-green-50 border border-green-200 rounded">
@@ -820,24 +1318,181 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
                       </Card>
                     ))}
 
-                    {location.transitionText && (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded">
-                        <p className="whitespace-pre-wrap">{location.transitionText}</p>
-                      </div>
-                    )}
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+                      {isEditing && editingField === `location-transition-${location.id}` ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={tempInputValue}
+                            onChange={handleInputChange}
+                            onBlur={() => handleInputBlur(`location-transition-${location.id}`)}
+                            onKeyDown={(e) => handleInputKeyDown(e, `location-transition-${location.id}`)}
+                            placeholder="Enter transition text"
+                            className="min-h-20"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`location-transition-${location.id}`, tempInputValue)}>
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            {location.transitionText ? (
+                              <p className="whitespace-pre-wrap">{location.transitionText}</p>
+                            ) : (
+                              <p className="text-gray-500 italic">No transition text</p>
+                            )}
+                          </div>
+                          {isEditing && (
+                            <Button size="sm" variant="ghost" onClick={() => handleEdit(`location-transition-${location.id}`)}>
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                    {location.mapsLink && (
+                    <div className="space-y-3">
+                      {/* Google Maps Link */}
                       <div>
-                        <a
-                          href={location.mapsLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          Google Maps Link
-                        </a>
+                        {isEditing && editingField === `location-maps-link-${location.id}` ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={tempInputValue}
+                              onChange={handleInputChange}
+                              onBlur={() => handleInputBlur(`location-maps-link-${location.id}`)}
+                              onKeyDown={(e) => handleInputKeyDown(e, `location-maps-link-${location.id}`)}
+                              placeholder="Enter Google Maps URL"
+                              className="w-full"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`location-maps-link-${location.id}`, tempInputValue)}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            {location.mapsLink ? (
+                              <a
+                                href={location.mapsLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                Google Maps Link
+                              </a>
+                            ) : (
+                              <span className="text-gray-500 italic">No Google Maps link</span>
+                            )}
+                            {isEditing && (
+                              <Button size="sm" variant="ghost" onClick={() => handleEdit(`location-maps-link-${location.id}`)}>
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
+
+                      {/* Video Link */}
+                      <div>
+                        {isEditing && editingField === `location-video-link-${location.id}` ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={tempInputValue}
+                              onChange={handleInputChange}
+                              onBlur={() => handleInputBlur(`location-video-link-${location.id}`)}
+                              onKeyDown={(e) => handleInputKeyDown(e, `location-video-link-${location.id}`)}
+                              placeholder="Enter Video URL"
+                              className="w-full"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`location-video-link-${location.id}`, tempInputValue)}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            {location.videoLink ? (
+                              <a
+                                href={location.videoLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-red-600 hover:text-red-800 underline"
+                              >
+                                Video Link
+                              </a>
+                            ) : (
+                              <span className="text-gray-500 italic">No video link</span>
+                            )}
+                            {isEditing && (
+                              <Button size="sm" variant="ghost" onClick={() => handleEdit(`location-video-link-${location.id}`)}>
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Image Link */}
+                      <div>
+                        {isEditing && editingField === `location-image-link-${location.id}` ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={tempInputValue}
+                              onChange={handleInputChange}
+                              onBlur={() => handleInputBlur(`location-image-link-${location.id}`)}
+                              onKeyDown={(e) => handleInputKeyDown(e, `location-image-link-${location.id}`)}
+                              placeholder="Enter Image URL"
+                              className="w-full"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(`location-image-link-${location.id}`, tempInputValue)}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleCancelEdit()}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            {location.imageLink ? (
+                              <a
+                                href={location.imageLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-green-600 hover:text-green-800 underline"
+                              >
+                                Image Link
+                              </a>
+                            ) : (
+                              <span className="text-gray-500 italic">No image link</span>
+                            )}
+                            {isEditing && (
+                              <Button size="sm" variant="ghost" onClick={() => handleEdit(`location-image-link-${location.id}`)}>
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

@@ -7,6 +7,8 @@ export interface SplashScreen {
   title: string
   content: string
   mapsLink?: string
+  videoLink?: string
+  imageLink?: string
 }
 
 export interface Puzzle {
@@ -20,6 +22,8 @@ export interface Puzzle {
   difficulty: number // 1-5 scale
   order: number
   localContext?: string // How this puzzle relates to the city specifically
+  videoLink?: string
+  imageLink?: string
 }
 
 export interface PubLocation {
@@ -32,6 +36,8 @@ export interface PubLocation {
   puzzles: Puzzle[]
   transitionText: string
   mapsLink?: string
+  videoLink?: string
+  imageLink?: string
   walkingTime?: string // Time to next pub
   areaDescription?: string // Description of the area/neighborhood
 }
@@ -41,6 +47,8 @@ export interface LocationMapping {
     name: string
     venueType: VenueType
     mapsLink?: string
+    videoLink?: string
+    imageLink?: string
   }
 }
 
