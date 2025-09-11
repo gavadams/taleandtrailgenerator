@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       const cityContext = city ? `, ${city}, UK` : ', UK'
       
       // Prefer actualName, then placeholderName
-      let locationName = loc.actualName || loc.placeholderName
+      const locationName = loc.actualName || loc.placeholderName
       
       // If we have a generic name, try to make it more specific by adding "pub" and city
       if (locationName && (

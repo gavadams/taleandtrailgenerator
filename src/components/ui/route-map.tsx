@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,9 +27,7 @@ interface RouteMapProps {
 
 
 export function RouteMap({ locations, city, cityArea, gameId, onRouteInfoUpdate }: RouteMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null)
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Debug logging
@@ -67,10 +65,9 @@ export function RouteMap({ locations, city, cityArea, gameId, onRouteInfoUpdate 
     }
   }
 
-  const validateRoute = async () => {
+  const validateRoute = useCallback(async () => {
     if (locations.length < 2) return
 
-    setIsLoading(true)
     setError(null)
 
     try {
@@ -83,16 +80,14 @@ export function RouteMap({ locations, city, cityArea, gameId, onRouteInfoUpdate 
     } catch (err) {
       console.error('Route validation error:', err)
       setError('Failed to validate route')
-    } finally {
-      setIsLoading(false)
     }
-  }
+  }, [locations, city, gameId, onRouteInfoUpdate])
 
   useEffect(() => {
     if (locations.length > 0) {
       validateRoute()
     }
-  }, [locations])
+  }, [locations, validateRoute])
 
 
   // Show message if no locations
