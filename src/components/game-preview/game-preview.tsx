@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Game } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, MapPin, Puzzle, Clock, Download, Eye, Edit3, Check, X, Save } from 'lucide-react'
 import { RouteMap } from '@/components/ui/route-map'
 import { toast } from 'sonner'
@@ -230,8 +229,7 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
   const handleSaveGame = () => {
     if (onSave) {
       onSave(editedGame)
-    } else {
-      console.error('onSave is not available!')
+      setIsEditing(false) // Auto-exit edit mode after saving
     }
   }
 

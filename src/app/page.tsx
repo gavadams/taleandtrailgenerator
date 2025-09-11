@@ -154,7 +154,8 @@ export default function HomePage() {
               toast.success('Game saved successfully!')
             } catch (error) {
               console.error('Error saving game:', error)
-              toast.error(`Failed to save game: ${error.message}`)
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+              toast.error(`Failed to save game: ${errorMessage}`)
             }
           }}
         />
