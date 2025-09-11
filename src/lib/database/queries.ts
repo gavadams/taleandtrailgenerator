@@ -57,7 +57,7 @@ export class DatabaseService {
     if (!data) return []
 
     // Map database fields to TypeScript interface
-    return data.map(game => ({
+    const mappedGames = data.map(game => ({
       id: game.id,
       title: game.title,
       theme: game.theme,
@@ -68,10 +68,19 @@ export class DatabaseService {
       puzzlesPerPub: game.puzzles_per_pub,
       content: game.content,
       locationPlaceholders: game.location_placeholders, // Map underscore to camelCase
+      routeInfo: game.route_info ? {
+        totalDistance: game.route_info.total_distance,
+        totalTime: game.route_info.total_time,
+        isValid: game.route_info.is_valid
+      } : undefined,
       createdAt: game.created_at,
       updatedAt: game.updated_at,
       userId: game.user_id
     }))
+    
+    console.log('Mapped games with route info:', mappedGames.map(g => ({ id: g.id, title: g.title, routeInfo: g.routeInfo })))
+    
+    return mappedGames
   }
 
   async getGame(gameId: string, userId: string): Promise<Game | null> {
@@ -102,6 +111,11 @@ export class DatabaseService {
       puzzlesPerPub: data.puzzles_per_pub,
       content: data.content,
       locationPlaceholders: data.location_placeholders, // Map underscore to camelCase
+      routeInfo: data.route_info ? {
+        totalDistance: data.route_info.total_distance,
+        totalTime: data.route_info.total_time,
+        isValid: data.route_info.is_valid
+      } : undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       userId: data.user_id
@@ -191,6 +205,34 @@ export class DatabaseService {
       updatedAt: data.updated_at,
       userId: data.user_id,
     }
+  }
+
+  async updateRouteInfo(gameId: string, userId: string, routeInfo: Game['routeInfo']): Promise<boolean> {
+    const supabase = await this.getSupabase()
+    
+    const updateData = {
+      route_info: routeInfo ? {
+        total_distance: routeInfo.totalDistance,
+        total_time: routeInfo.totalTime,
+        is_valid: routeInfo.isValid
+      } : null
+    }
+    
+    console.log('Updating route info in database:', { gameId, userId, updateData })
+    
+    const { error } = await supabase
+      .from('games')
+      .update(updateData)
+      .eq('id', gameId)
+      .eq('user_id', userId)
+
+    if (error) {
+      console.error('Error updating route info:', error)
+      return false
+    }
+
+    console.log('Route info updated successfully')
+    return true
   }
 
   async deleteGame(gameId: string, userId: string): Promise<boolean> {

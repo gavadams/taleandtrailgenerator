@@ -16,9 +16,10 @@ interface GamePreviewProps {
   game: Game
   onBack: () => void
   onSave?: (updatedGame: Game) => void
+  onRouteInfoUpdate?: (routeInfo: any) => void
 }
 
-export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
+export function GamePreview({ game, onBack, onSave, onRouteInfoUpdate }: GamePreviewProps) {
   const [activeTab, setActiveTab] = useState('intro')
   const [showAnswers, setShowAnswers] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -426,6 +427,23 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
     if (onSave) {
       onSave(editedGame)
       setIsEditing(false) // Auto-exit edit mode after saving
+    }
+  }
+
+  const handleRouteInfoUpdate = (routeInfo: any) => {
+    // Update the local game state with new route info
+    setEditedGame(prev => ({
+      ...prev,
+      routeInfo: {
+        totalDistance: routeInfo.totalDistance,
+        totalTime: routeInfo.totalTime,
+        isValid: routeInfo.isValid
+      }
+    }))
+    
+    // Notify parent component
+    if (onRouteInfoUpdate) {
+      onRouteInfoUpdate(routeInfo)
     }
   }
 
@@ -1504,6 +1522,8 @@ npm                  <div className="mt-4 space-y-3">
               locations={editedGame.content.locations || []}
               city={editedGame.city}
               cityArea={undefined}
+              gameId={editedGame.id}
+              onRouteInfoUpdate={handleRouteInfoUpdate}
             />
           </TabsContent>
 

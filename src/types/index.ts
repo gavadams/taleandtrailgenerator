@@ -67,6 +67,11 @@ export interface Game {
     resolution: SplashScreen
   }
   locationPlaceholders: LocationMapping
+  routeInfo?: {
+    totalDistance: string
+    totalTime: string
+    isValid: boolean
+  }
   createdAt: string
   updatedAt: string
   userId: string

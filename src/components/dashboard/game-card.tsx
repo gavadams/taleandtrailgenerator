@@ -4,7 +4,7 @@ import { Game } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Clock, Puzzle, Eye, Edit, Trash2, Copy } from 'lucide-react'
+import { MapPin, Clock, Puzzle, Eye, Edit, Trash2, Copy, Navigation } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface GameCardProps {
@@ -106,6 +106,25 @@ export function GameCard({ game, onEdit, onDelete, onPreview, onDuplicate }: Gam
               <span>{game.pubCount} pubs, {game.puzzlesPerPub} puzzles each</span>
             </div>
           </div>
+          
+          {/* Route Information */}
+          {game.routeInfo && (
+            <div className="flex items-center space-x-4 text-sm text-gray-600 pt-2 border-t border-gray-100">
+              <div className="flex items-center space-x-1">
+                <Navigation className="h-4 w-4 text-blue-500" />
+                <span className="text-blue-600 font-medium">{game.routeInfo.totalDistance}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Clock className="h-4 w-4 text-green-500" />
+                <span className="text-green-600 font-medium">{game.routeInfo.totalTime}</span>
+              </div>
+              {!game.routeInfo.isValid && (
+                <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-300">
+                  Route needs review
+                </Badge>
+              )}
+            </div>
+          )}
           
           <div className="text-xs text-gray-500">
             Created {game.createdAt ? formatDistanceToNow(new Date(game.createdAt), { addSuffix: true }) : 'Unknown date'}

@@ -80,6 +80,20 @@ export default function HomePage() {
     setViewMode('preview')
   }
 
+  const handleRouteInfoUpdate = (routeInfo: any) => {
+    // Update the game in the games list with new route info
+    setGames(prev => prev.map(game => 
+      game.id === previewGame?.id 
+        ? { ...game, routeInfo: routeInfo }
+        : game
+    ))
+    
+    // Update the preview game if it's the same one
+    if (previewGame) {
+      setPreviewGame(prev => prev ? { ...prev, routeInfo: routeInfo } : null)
+    }
+  }
+
   const handleBackToDashboard = () => {
     setViewMode('dashboard')
     setEditingGame(null)
@@ -121,6 +135,7 @@ export default function HomePage() {
         <GamePreview
           game={previewGame}
           onBack={handleBackToDashboard}
+          onRouteInfoUpdate={handleRouteInfoUpdate}
           onSave={async (updatedGame) => {
             console.log('Save triggered with game:', updatedGame)
             try {

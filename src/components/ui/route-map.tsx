@@ -21,10 +21,12 @@ interface RouteMapProps {
   locations: PubLocation[]
   city: string
   cityArea?: string
+  gameId?: string
+  onRouteInfoUpdate?: (routeInfo: RouteInfo) => void
 }
 
 
-export function RouteMap({ locations, city, cityArea }: RouteMapProps) {
+export function RouteMap({ locations, city, cityArea, gameId, onRouteInfoUpdate }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -39,6 +41,32 @@ export function RouteMap({ locations, city, cityArea }: RouteMapProps) {
   const routeUrl = generateGoogleMapsDirectionsUrl(locations)
   const embedUrl = generateGoogleMapsEmbedUrl(locations)
 
+  const saveRouteInfo = async (routeInfo: RouteInfo) => {
+    if (!gameId) return
+
+    try {
+      const response = await fetch(`/api/games/${gameId}/route-info`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ routeInfo }),
+      })
+
+      if (response.ok) {
+        console.log('Route info saved successfully')
+        // Notify parent component of the update
+        if (onRouteInfoUpdate) {
+          onRouteInfoUpdate(routeInfo)
+        }
+      } else {
+        console.error('Failed to save route info')
+      }
+    } catch (err) {
+      console.error('Error saving route info:', err)
+    }
+  }
+
   const validateRoute = async () => {
     if (locations.length < 2) return
 
@@ -49,6 +77,9 @@ export function RouteMap({ locations, city, cityArea }: RouteMapProps) {
       // Use real Google Maps API to get accurate walking times and distances
       const routeInfo = await getGoogleMapsRouteInfo(locations, city)
       setRouteInfo(routeInfo)
+      
+      // Save route info to database
+      await saveRouteInfo(routeInfo)
     } catch (err) {
       console.error('Route validation error:', err)
       setError('Failed to validate route')
