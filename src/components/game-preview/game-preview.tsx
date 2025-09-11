@@ -299,7 +299,7 @@ export function GamePreview({ game, onBack, onSave }: GamePreviewProps) {
         }
       } else if (field.startsWith('puzzle-clues-')) {
         const puzzleId = field.replace('puzzle-clues-', '')
-        const clues = value.split('\n').filter(clue => clue.trim() !== '') as string[]
+        const clues = value.split('\n').filter((clue: string) => clue.trim() !== '') as string[]
         if (newGame.content?.locations) {
           newGame.content = {
             ...newGame.content,

@@ -15,14 +15,13 @@ interface DashboardProps {
   onCreateGame: () => void
   onEditGame: (game: Game) => void
   onPreviewGame: (game: Game) => void
-  onDuplicateGame: (game: Game) => void
   onAdminPanel?: () => void
   isAdmin?: boolean
   games: Game[]
   setGames: (games: Game[] | ((prev: Game[]) => Game[])) => void
 }
 
-export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onDuplicateGame, onAdminPanel, isAdmin, games, setGames }: DashboardProps) {
+export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPanel, isAdmin, games, setGames }: DashboardProps) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
