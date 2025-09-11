@@ -17,11 +17,12 @@ interface DashboardProps {
   onPreviewGame: (game: Game) => void
   onAdminPanel?: () => void
   isAdmin?: boolean
+  games: Game[]
+  setGames: (games: Game[] | ((prev: Game[]) => Game[])) => void
 }
 
-export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPanel, isAdmin }: DashboardProps) {
+export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPanel, isAdmin, games, setGames }: DashboardProps) {
   const { user } = useAuth()
-  const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTheme, setFilterTheme] = useState<Theme | ''>('')
@@ -42,7 +43,7 @@ export function Dashboard({ onCreateGame, onEditGame, onPreviewGame, onAdminPane
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, setGames])
 
   useEffect(() => {
     if (user) {

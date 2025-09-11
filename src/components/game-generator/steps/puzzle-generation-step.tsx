@@ -27,11 +27,14 @@ export function PuzzleGenerationStep({ gameData, onComplete }: PuzzleGenerationS
   })
 
   const puzzleTypes: { value: PuzzleType; label: string; description: string }[] = [
-    { value: 'logic', label: 'Logic Puzzle', description: 'Reasoning, deduction, elimination' },
-    { value: 'observation', label: 'Observation', description: 'Visual clues, details, patterns' },
-    { value: 'cipher', label: 'Cipher/Code', description: 'Encrypted messages, codes, symbols' },
-    { value: 'deduction', label: 'Deduction', description: 'Eliminate suspects, find contradictions' },
-    { value: 'local', label: 'Local Knowledge', description: 'Landmarks, street names, pub features' },
+    { value: 'logic', label: 'Logic Puzzle', description: 'Complex reasoning, syllogisms, conditional statements' },
+    { value: 'observation', label: 'Observation', description: 'Environmental storytelling, visual pattern recognition' },
+    { value: 'cipher', label: 'Cipher/Code', description: 'Multi-layer encryption, historical ciphers, substitution codes' },
+    { value: 'deduction', label: 'Deduction', description: 'Evidence correlation, timeline reconstruction, alibi verification' },
+    { value: 'local', label: 'Local Knowledge', description: 'Historical events, architectural details, cultural references' },
+    { value: 'wordplay', label: 'Wordplay', description: 'Sophisticated anagrams, cryptic clues, linguistic patterns' },
+    { value: 'math', label: 'Mathematical', description: 'Geometric patterns, statistical analysis, algorithmic thinking' },
+    { value: 'pattern', label: 'Pattern Recognition', description: 'Complex sequences, fractal patterns, recursive logic' },
   ]
 
   const addPuzzle = (locationIndex: number) => {

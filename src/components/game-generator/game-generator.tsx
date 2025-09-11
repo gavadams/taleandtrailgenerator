@@ -75,7 +75,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleGenerateContent = async () => {
+  const handleGenerateContent = async (retryCount = 0) => {
     if (!user) return
 
     setGenerationState(prev => ({ ...prev, isLoading: true }))
@@ -129,8 +129,27 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         console.error('API Error:', errorData)
         console.error('Response status:', response.status)
         
-        // Provide more helpful error messages
-        if (errorData.error?.includes('parse AI response')) {
+        // Handle specific error types with retry logic
+        if (response.status === 503 || errorData.error?.includes('overloaded') || errorData.error?.includes('Service Unavailable')) {
+          if (retryCount < 3) {
+            console.log(`Google AI service overloaded, retrying in ${(retryCount + 1) * 2} seconds... (attempt ${retryCount + 1}/3)`)
+            toast.info(`AI service is busy. Retrying in ${(retryCount + 1) * 2} seconds... (attempt ${retryCount + 1}/3)`)
+            
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000))
+            
+            // Retry with different provider if available
+            if (retryCount === 1 && aiProvider === 'google') {
+              console.log('Switching to OpenAI as fallback...')
+              setAiProvider('openai')
+              toast.info('Switching to OpenAI as fallback...')
+            }
+            
+            return handleGenerateContent(retryCount + 1)
+          } else {
+            throw new Error('AI service is currently overloaded. Please try again in a few minutes, or switch to a different AI provider.')
+          }
+        } else if (errorData.error?.includes('parse AI response')) {
           throw new Error('The AI generated content in an unexpected format. Please try again with different settings.')
         } else if (errorData.error?.includes('API key')) {
           throw new Error('AI service configuration issue. Please check your API keys.')
@@ -172,9 +191,25 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
       }))
 
       toast.success('Content generated successfully!')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating content:', error)
-      toast.error('Failed to generate content. Please try again.')
+      
+      // Provide specific error messages based on error type
+      let errorMessage = 'Failed to generate content. Please try again.'
+      
+      if (error.message?.includes('overloaded')) {
+        errorMessage = 'AI service is currently overloaded. Please try again in a few minutes, or switch to a different AI provider.'
+      } else if (error.message?.includes('API key')) {
+        errorMessage = 'AI service configuration issue. Please check your API keys in the settings.'
+      } else if (error.message?.includes('format error') || error.message?.includes('JSON')) {
+        errorMessage = 'The AI didn\'t return properly formatted content. This sometimes happens - please try again with a different AI provider.'
+      } else if (error.message?.includes('unexpected format')) {
+        errorMessage = 'The AI generated content in an unexpected format. Please try again with different settings.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      toast.error(errorMessage)
       setGenerationState(prev => ({ ...prev, isLoading: false }))
     }
   }
@@ -245,38 +280,354 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         {/* Progress Steps */}
         <Card>
           <CardContent className="py-6">
-            <div className="flex items-center justify-between">
-              {generationState.steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                    index <= generationState.currentStep
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'border-gray-300 text-gray-400'
-                  }`}>
-                    {index < generationState.currentStep ? (
-                      <span className="text-sm">✓</span>
-                    ) : (
-                      <span className="text-sm font-medium">{index + 1}</span>
-                    )}
-                  </div>
-                  <div className="ml-3">
-                    <div className={`text-sm font-medium ${
-                      index <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
-                    }`}>
-                      {step.title}
+            <div className="space-y-4">
+              {/* Desktop/Tablet: 2 rows with Z-shaped snake pattern */}
+              <div className="hidden md:block">
+                <div className="relative">
+                  {/* First row: steps 1-4 with horizontal connectors */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        0 <= generationState.currentStep
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {0 < generationState.currentStep ? (
+                          <span className="text-sm">✓</span>
+                        ) : (
+                          <span className="text-sm font-medium">1</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium ${
+                          0 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {generationState.steps[0].title}
+                        </div>
+                        <div className="text-xs text-gray-500">{generationState.steps[0].description}</div>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500">{step.description}</div>
-                  </div>
-                  {index < generationState.steps.length - 1 && (
-                    <div className={`w-16 h-0.5 mx-4 ${
-                      index < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    
+                    {/* Horizontal connector 1→2 */}
+                    <div className={`flex-1 h-0.5 mx-4 ${
+                      0 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
                     }`} />
-                  )}
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        1 <= generationState.currentStep
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {1 < generationState.currentStep ? (
+                          <span className="text-sm">✓</span>
+                        ) : (
+                          <span className="text-sm font-medium">2</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium ${
+                          1 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {generationState.steps[1].title}
+                        </div>
+                        <div className="text-xs text-gray-500">{generationState.steps[1].description}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Horizontal connector 2→3 */}
+                    <div className={`flex-1 h-0.5 mx-4 ${
+                      1 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        2 <= generationState.currentStep
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {2 < generationState.currentStep ? (
+                          <span className="text-sm">✓</span>
+                        ) : (
+                          <span className="text-sm font-medium">3</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium ${
+                          2 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {generationState.steps[2].title}
+                        </div>
+                        <div className="text-xs text-gray-500">{generationState.steps[2].description}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Horizontal connector 3→4 */}
+                    <div className={`flex-1 h-0.5 mx-4 ${
+                      2 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        3 <= generationState.currentStep
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {3 < generationState.currentStep ? (
+                          <span className="text-sm">✓</span>
+                        ) : (
+                          <span className="text-sm font-medium">4</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium ${
+                          3 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {generationState.steps[3].title}
+                        </div>
+                        <div className="text-xs text-gray-500">{generationState.steps[3].description}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Vertical connector 4→5 */}
+                  <div className="flex justify-end mt-4">
+                    <div className={`w-0.5 h-8 ${
+                      3 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
+                  </div>
+                  
+                  {/* Second row: steps 5-7 (reversed) with horizontal connectors - aligned right */}
+                  <div className="flex items-center justify-end">
+                    {/* Empty space for right alignment */}
+                    <div className="flex-1"></div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        4 <= generationState.currentStep
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {4 < generationState.currentStep ? (
+                          <span className="text-sm">✓</span>
+                        ) : (
+                          <span className="text-sm font-medium">5</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium ${
+                          4 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {generationState.steps[4].title}
+                        </div>
+                        <div className="text-xs text-gray-500">{generationState.steps[4].description}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Horizontal connector 5→6 */}
+                    <div className={`flex-1 h-0.5 mx-4 ${
+                      4 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        5 <= generationState.currentStep
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {5 < generationState.currentStep ? (
+                          <span className="text-sm">✓</span>
+                        ) : (
+                          <span className="text-sm font-medium">6</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium ${
+                          5 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {generationState.steps[5].title}
+                        </div>
+                        <div className="text-xs text-gray-500">{generationState.steps[5].description}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Horizontal connector 6→7 */}
+                    <div className={`flex-1 h-0.5 mx-4 ${
+                      5 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        6 <= generationState.currentStep
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {6 < generationState.currentStep ? (
+                          <span className="text-sm">✓</span>
+                        ) : (
+                          <span className="text-sm font-medium">7</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium ${
+                          6 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {generationState.steps[6].title}
+                        </div>
+                        <div className="text-xs text-gray-500">{generationState.steps[6].description}</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
+              
+              {/* Mobile: Multiple rows with 2 steps per row and connectors */}
+              <div className="block md:hidden">
+                <div className="space-y-4">
+                  {Array.from({ length: Math.ceil(generationState.steps.length / 2) }, (_, rowIndex) => {
+                    const step1Index = rowIndex * 2;
+                    const step2Index = rowIndex * 2 + 1;
+                    const step1 = generationState.steps[step1Index];
+                    const step2 = generationState.steps[step2Index];
+                    
+                    return (
+                      <div key={rowIndex}>
+                        <div className="flex items-center justify-between">
+                          {/* First step in row */}
+                          {step1 && (
+                            <div className="flex items-center space-x-3">
+                              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                                step1Index <= generationState.currentStep
+                                  ? 'bg-blue-600 border-blue-600 text-white'
+                                  : 'border-gray-300 text-gray-400'
+                              }`}>
+                                {step1Index < generationState.currentStep ? (
+                                  <span className="text-sm">✓</span>
+                                ) : (
+                                  <span className="text-sm font-medium">{step1Index + 1}</span>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className={`text-sm font-medium ${
+                                  step1Index <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                  {step1.title}
+                                </div>
+                                <div className="text-xs text-gray-500">{step1.description}</div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Horizontal connector between steps in row */}
+                          {step1 && step2 && (
+                            <div className={`flex-1 h-0.5 mx-4 ${
+                              step1Index < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                            }`} />
+                          )}
+                          
+                          {/* Second step in row */}
+                          {step2 && (
+                            <div className="flex items-center space-x-3">
+                              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                                step2Index <= generationState.currentStep
+                                  ? 'bg-blue-600 border-blue-600 text-white'
+                                  : 'border-gray-300 text-gray-400'
+                              }`}>
+                                {step2Index < generationState.currentStep ? (
+                                  <span className="text-sm">✓</span>
+                                ) : (
+                                  <span className="text-sm font-medium">{step2Index + 1}</span>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className={`text-sm font-medium ${
+                                  step2Index <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                  {step2.title}
+                                </div>
+                                <div className="text-xs text-gray-500">{step2.description}</div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Vertical connector to next row */}
+                        {rowIndex < Math.ceil(generationState.steps.length / 2) - 1 && (
+                          <div className="flex justify-center mt-4">
+                            <div className={`w-0.5 h-6 ${
+                              step2Index < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                            }`} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Selected Options Overview */}
+        {generationState.currentStep > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Selected Options</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {generationState.gameData.theme && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Theme:</span>
+                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">{generationState.gameData.theme}</span>
+                  </div>
+                )}
+                {generationState.gameData.city && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">City:</span>
+                    <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">{generationState.gameData.city}</span>
+                  </div>
+                )}
+                {generationState.gameData.difficulty && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Difficulty:</span>
+                    <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded capitalize">{generationState.gameData.difficulty}</span>
+                  </div>
+                )}
+                {generationState.gameData.estimatedDuration && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Duration:</span>
+                    <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">{generationState.gameData.estimatedDuration} minutes</span>
+                  </div>
+                )}
+                {generationState.gameData.pubCount && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Pubs:</span>
+                    <span className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">{generationState.gameData.pubCount}</span>
+                  </div>
+                )}
+                {generationState.gameData.puzzlesPerPub && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Puzzles per Pub:</span>
+                    <span className="text-sm bg-pink-100 text-pink-800 px-2 py-1 rounded">{generationState.gameData.puzzlesPerPub}</span>
+                  </div>
+                )}
+                {generationState.steps.find(s => s.id === 'template')?.data?.template && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Template:</span>
+                    <span className="text-sm bg-indigo-100 text-indigo-800 px-2 py-1 rounded">{generationState.steps.find(s => s.id === 'template')?.data?.template?.name}</span>
+                  </div>
+                )}
+                {generationState.steps.find(s => s.id === 'area')?.data?.cityArea && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Area:</span>
+                    <span className="text-sm bg-teal-100 text-teal-800 px-2 py-1 rounded">{generationState.steps.find(s => s.id === 'area')?.data?.cityArea}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* AI Provider Selection */}
         {generationState.currentStep >= 2 && generationState.currentStep <= 4 && (
@@ -287,29 +638,44 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                 AI Content Generation
               </CardTitle>
               <CardDescription>
-                Choose your AI provider for content generation
+                Choose your AI provider for content generation. If one service is busy, try another.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex space-x-4">
-                <Button
-                  variant={aiProvider === 'openai' ? 'default' : 'outline'}
-                  onClick={() => setAiProvider('openai')}
-                >
-                  OpenAI GPT-4
-                </Button>
-                <Button
-                  variant={aiProvider === 'anthropic' ? 'default' : 'outline'}
-                  onClick={() => setAiProvider('anthropic')}
-                >
-                  Anthropic Claude
-                </Button>
-                <Button
-                  variant={aiProvider === 'google' ? 'default' : 'outline'}
-                  onClick={() => setAiProvider('google')}
-                >
-                  Google Gemini
-                </Button>
+              <div className="space-y-4">
+                <div className="flex space-x-4">
+                  <Button
+                    variant={aiProvider === 'openai' ? 'default' : 'outline'}
+                    onClick={() => setAiProvider('openai')}
+                    className="flex-1"
+                  >
+                    OpenAI GPT-4
+                  </Button>
+                  <Button
+                    variant={aiProvider === 'anthropic' ? 'default' : 'outline'}
+                    onClick={() => setAiProvider('anthropic')}
+                    className="flex-1"
+                  >
+                    Anthropic Claude
+                  </Button>
+                  <Button
+                    variant={aiProvider === 'google' ? 'default' : 'outline'}
+                    onClick={() => setAiProvider('google')}
+                    className="flex-1"
+                  >
+                    Google Gemini
+                  </Button>
+                </div>
+                
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-yellow-800">
+                    <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Service Status</span>
+                  </div>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    If you encounter "service overloaded" errors, try switching to a different AI provider above.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -54,7 +54,24 @@ export class DatabaseService {
       return []
     }
 
-    return data || []
+    if (!data) return []
+
+    // Map database fields to TypeScript interface
+    return data.map(game => ({
+      id: game.id,
+      title: game.title,
+      theme: game.theme,
+      city: game.city,
+      difficulty: game.difficulty,
+      estimatedDuration: game.estimated_duration,
+      pubCount: game.pub_count,
+      puzzlesPerPub: game.puzzles_per_pub,
+      content: game.content,
+      locationPlaceholders: game.location_placeholders, // Map underscore to camelCase
+      createdAt: game.created_at,
+      updatedAt: game.updated_at,
+      userId: game.user_id
+    }))
   }
 
   async getGame(gameId: string, userId: string): Promise<Game | null> {
@@ -71,7 +88,24 @@ export class DatabaseService {
       return null
     }
 
-    return data
+    if (!data) return null
+
+    // Map database fields to TypeScript interface
+    return {
+      id: data.id,
+      title: data.title,
+      theme: data.theme,
+      city: data.city,
+      difficulty: data.difficulty,
+      estimatedDuration: data.estimated_duration,
+      pubCount: data.pub_count,
+      puzzlesPerPub: data.puzzles_per_pub,
+      content: data.content,
+      locationPlaceholders: data.location_placeholders, // Map underscore to camelCase
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      userId: data.user_id
+    }
   }
 
   async createGame(game: Omit<Game, 'id' | 'createdAt' | 'updatedAt'>): Promise<Game | null> {

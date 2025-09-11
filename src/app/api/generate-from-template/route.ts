@@ -115,6 +115,23 @@ CRITICAL INSTRUCTIONS:
 6. Use real, established pub crawl routes from online sources
 7. Ensure all content is specific to the chosen city and area
 
+PUZZLE GENERATION REQUIREMENTS:
+- Use at least 5 different puzzle types from the available types: ${template.puzzleTypes.join(', ')}
+- No single puzzle type should exceed 30% of total puzzles
+- Include puzzles from different categories: reasoning, creative, analytical, and contextual
+- Vary difficulty levels within each puzzle type
+- Include at least one multi-step puzzle and one hybrid puzzle combining multiple types
+- Ensure puzzles build on each other and reveal story elements progressively
+
+CRITICAL PUZZLE CONTENT REQUIREMENTS:
+- Each puzzle MUST have COMPLETE, SOLVABLE content - not just concepts or ideas
+- The "content" field must contain the actual puzzle data, questions, or materials needed to solve it
+- The "answer" field must be the EXACT, SPECIFIC solution (not just "the answer" or "solution")
+- The "clues" field must contain 3 PROGRESSIVE hints that actually help solve the puzzle
+- Each puzzle must be immediately playable without additional setup or explanation
+- Puzzles must be specific to the pub location and story context
+- Include actual data, numbers, text, or materials that players can work with
+
 ${customInstructions ? `Additional Instructions: ${customInstructions}` : ''}`
 
   return instructions

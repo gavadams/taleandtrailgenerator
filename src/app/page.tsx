@@ -9,6 +9,7 @@ import { GamePreview } from '@/components/game-preview/game-preview'
 import { AdminPanel } from '@/components/admin/admin-panel'
 import { Game } from '@/types'
 import { isAdmin } from '@/lib/admin'
+import { toast } from 'sonner'
 
 type ViewMode = 'dashboard' | 'create' | 'edit' | 'preview' | 'admin'
 
@@ -18,6 +19,7 @@ export default function HomePage() {
   const [editingGame, setEditingGame] = useState<Game | null>(null)
   const [previewGame, setPreviewGame] = useState<Game | null>(null)
   const [isUserAdmin, setIsUserAdmin] = useState(false)
+  const [games, setGames] = useState<Game[]>([])
 
   useEffect(() => {
     if (user) {
@@ -95,6 +97,8 @@ export default function HomePage() {
           onPreviewGame={handlePreviewGame}
           onAdminPanel={() => setViewMode('admin')}
           isAdmin={isUserAdmin}
+          games={games}
+          setGames={setGames}
         />
       )}
       
@@ -117,6 +121,42 @@ export default function HomePage() {
         <GamePreview
           game={previewGame}
           onBack={handleBackToDashboard}
+          onSave={async (updatedGame) => {
+            console.log('Save triggered with game:', updatedGame)
+            try {
+              // Save to database
+              console.log('Sending PUT request to:', `/api/games/${updatedGame.id}`)
+              const response = await fetch(`/api/games/${updatedGame.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedGame)
+              })
+              
+              console.log('Response status:', response.status)
+              console.log('Response ok:', response.ok)
+              
+              if (!response.ok) {
+                const errorText = await response.text()
+                console.error('Response error:', errorText)
+                throw new Error(`Failed to save game: ${response.status} ${errorText}`)
+              }
+              
+              const savedGame = await response.json()
+              console.log('Saved game response:', savedGame)
+              
+              // Update the game in the games list
+              setGames(prev => prev.map(g => g.id === savedGame.id ? savedGame : g))
+              setPreviewGame(savedGame)
+              
+              // Show success message
+              toast.success('Game saved successfully!')
+            } catch (error) {
+              console.error('Error saving game:', error)
+              toast.error(`Failed to save game: ${error.message}`)
+            }
+          }}
         />
       )}
       

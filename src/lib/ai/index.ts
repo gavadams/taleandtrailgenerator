@@ -18,6 +18,40 @@ export class AIService {
     this.config = config
   }
 
+  /**
+   * Ensures balanced puzzle type distribution in generated games
+   */
+  private ensurePuzzleVariety(puzzles: any[]): any[] {
+    const puzzleTypes = ['logic', 'observation', 'cipher', 'deduction', 'local', 'wordplay', 'math', 'pattern']
+    const totalPuzzles = puzzles.length
+    const maxPerType = Math.ceil(totalPuzzles * 0.3) // Max 30% of any single type
+    const minTypes = Math.min(5, totalPuzzles) // At least 5 different types
+    
+    // Count current distribution
+    const typeCounts: { [key: string]: number } = {}
+    puzzleTypes.forEach(type => typeCounts[type] = 0)
+    
+    puzzles.forEach(puzzle => {
+      if (puzzle.type && typeCounts[puzzle.type] !== undefined) {
+        typeCounts[puzzle.type]++
+      }
+    })
+    
+    // Check if we need to rebalance
+    const overLimit = Object.entries(typeCounts).some(([type, count]) => count > maxPerType)
+    const usedTypes = Object.entries(typeCounts).filter(([type, count]) => count > 0).length
+    
+    if (overLimit || usedTypes < minTypes) {
+      // Add variety enforcement to the prompt
+      return puzzles.map(puzzle => ({
+        ...puzzle,
+        varietyNote: `Ensure this puzzle type (${puzzle.type}) doesn't exceed 30% of total puzzles and that at least 5 different puzzle types are used across the game.`
+      }))
+    }
+    
+    return puzzles
+  }
+
   async generateGameContent(request: AIGenerationRequest): Promise<AIGenerationResponse> {
     switch (this.config.provider) {
       case 'openai':
@@ -122,6 +156,11 @@ export class AIService {
     } catch (error: any) {
       console.error('Google AI generation error:', error)
       
+      // Handle service overload errors specifically
+      if (error.message?.includes('overloaded') || error.message?.includes('Service Unavailable') || error.message?.includes('503')) {
+        throw new Error('Google AI service is currently overloaded. Please try again in a few minutes, or switch to a different AI provider.')
+      }
+      
       // If it's a parsing error, try once more with a much simpler prompt
       if (error.message.includes('parse AI response') || error.message.includes('format error') || error.message.includes('structure error')) {
         console.log('Retrying with much simpler prompt...')
@@ -194,6 +233,8 @@ Return ONLY this JSON format (no other text):
 
   private buildGameGenerationPrompt(request: AIGenerationRequest): string {
     return `
+🚨 CRITICAL: You MUST return ONLY valid JSON. No explanations, no markdown, no code blocks. Just pure JSON.
+
 Generate a complete pub crawl mystery game with the following specifications:
 
 Theme: ${request.theme}
@@ -267,32 +308,96 @@ WALKING ROUTE REQUIREMENTS:
 22. NATURAL FLOW: Make the route feel natural and enjoyable to walk, following established patterns
 23. ${!request.cityArea ? 'When no specific area is defined, use your knowledge of the most popular and well-documented pub crawl routes in the city.' : ''}
 
-ADVANCED PUZZLE TYPES TO USE:
-- logic: Complex logical reasoning, syllogisms, conditional statements, logical sequences
-- observation: Environmental storytelling, hidden details, visual pattern recognition, spatial reasoning
-- cipher: Multi-layer encryption, historical ciphers, substitution codes, frequency analysis
-- deduction: Evidence correlation, timeline reconstruction, motive analysis, alibi verification
-- local: Deep local knowledge, historical events, architectural details, cultural references
-- wordplay: Sophisticated anagrams, cryptic clues, linguistic patterns, etymology puzzles
-- math: Mathematical reasoning, geometric patterns, statistical analysis, algorithmic thinking
-- pattern: Complex sequence recognition, fractal patterns, recursive logic, system analysis
+ADVANCED PUZZLE TYPES TO USE (MUST USE VARIETY - NO MORE THAN 30% OF ANY SINGLE TYPE):
+- logic: Complex logical reasoning, syllogisms, conditional statements, logical sequences, truth tables, logical fallacies
+- observation: Environmental storytelling, hidden details, visual pattern recognition, spatial reasoning, architectural analysis
+- cipher: Multi-layer encryption, historical ciphers, substitution codes, frequency analysis, steganography, code-breaking
+- deduction: Evidence correlation, timeline reconstruction, motive analysis, alibi verification, witness statement analysis
+- local: Deep local knowledge, historical events, architectural details, cultural references, local legends, historical figures
+- wordplay: Sophisticated anagrams, cryptic clues, linguistic patterns, etymology puzzles, palindromes, acrostics
+- math: Mathematical reasoning, geometric patterns, statistical analysis, algorithmic thinking, probability, sequences
+- pattern: Complex sequence recognition, fractal patterns, recursive logic, system analysis, tessellations, fractals
 
-PUZZLE COMPLEXITY EXAMPLES:
-- EASY: Simple word puzzles, basic math, obvious observations
-- MEDIUM: Multi-step logic, pattern recognition, local knowledge application
-- HARD: Complex ciphers, advanced deduction, sophisticated mathematical reasoning
+PUZZLE DISTRIBUTION REQUIREMENTS:
+- Each game MUST use at least 5 different puzzle types
+- No single puzzle type should exceed 30% of total puzzles
+- Include at least one puzzle from each category: reasoning (logic/deduction), creative (wordplay/pattern), analytical (math/observation), contextual (local/cipher)
+- Vary difficulty within each type - don't make all puzzles of the same type the same difficulty
 
-HIGH-QUALITY PUZZLE EXAMPLES:
-- A cipher puzzle where the key is hidden in the pub's historical architecture
-- A logic puzzle that reveals a character's alibi through timeline reconstruction
-- An observation puzzle where players must notice specific details in the pub's decor
-- A local knowledge puzzle about the city's history that connects to the mystery
-- A mathematical puzzle that calculates distances or times relevant to the case
-- A wordplay puzzle using local dialect or historical language
-- A deduction puzzle where players must cross-reference witness statements
-- A pattern puzzle that reveals a hidden message in the pub's layout or design
-- A local knowledge puzzle about the area's famous residents or events
-- A logic puzzle involving the pub's history or previous owners
+ADVANCED PUZZLE MECHANICS TO IMPLEMENT:
+- Multi-step puzzles that require solving multiple sub-puzzles
+- Puzzles that build on previous solutions (progressive revelation)
+- Collaborative puzzles requiring team coordination
+- Time-sensitive puzzles with countdown elements
+- Environmental puzzles that use the pub's actual features
+- Cross-reference puzzles that connect information from multiple locations
+- Hybrid puzzles combining multiple puzzle types (e.g., cipher + local knowledge)
+- Meta-puzzles that require understanding the overall game structure
+- Red herring puzzles that mislead but provide valuable information when solved
+- Progressive difficulty puzzles that start easy but become more complex
+
+HIGH-QUALITY PUZZLE EXAMPLES BY TYPE:
+
+LOGIC PUZZLES:
+- A syllogism puzzle where players must determine which character is lying based on logical statements
+- A truth table puzzle involving multiple witnesses with contradictory statements
+- A logical sequence puzzle where pub opening hours reveal a pattern
+
+OBSERVATION PUZZLES:
+- Players must count specific architectural features to get a code number
+- A visual pattern puzzle using the pub's historical photographs or artwork
+- A spatial reasoning puzzle involving the pub's layout and historical modifications
+
+CIPHER PUZZLES:
+- A Caesar cipher where the shift value is hidden in the pub's founding year
+- A substitution cipher using the pub's historical menu items as the key
+- A steganography puzzle where a message is hidden in the pub's historical documents
+
+DEDUCTION PUZZLES:
+- Timeline reconstruction using witness statements and pub CCTV timestamps
+- Motive analysis comparing character backgrounds with opportunity windows
+- Alibi verification cross-referencing multiple witness accounts
+
+LOCAL KNOWLEDGE PUZZLES:
+- Historical event puzzle about a famous incident that happened near the pub
+- Architectural puzzle about the pub's historical significance in the area
+- Cultural reference puzzle about local traditions or famous residents
+
+WORDPLAY PUZZLES:
+- Anagram puzzle using the pub's historical name changes
+- Cryptic crossword clues about local landmarks visible from the pub
+- Palindrome puzzle about the pub's historical significance
+
+MATH PUZZLES:
+- Geometric puzzle calculating distances between historical pub locations
+- Statistical puzzle analyzing historical pub attendance patterns
+- Probability puzzle about historical events that could have happened
+
+PATTERN PUZZLES:
+- Sequence puzzle using the pub's historical renovation dates
+- Fractal pattern puzzle in the pub's architectural details
+- Recursive logic puzzle about the pub's ownership history
+
+ADVANCED MECHANIC EXAMPLES:
+
+MULTI-STEP PUZZLES:
+- Step 1: Solve a cipher to get a date, Step 2: Use that date to find a historical event, Step 3: Use the event details to solve a logic puzzle
+- Step 1: Count architectural features, Step 2: Use the count in a mathematical formula, Step 3: Apply the result to decode a message
+
+HYBRID PUZZLES:
+- Cipher + Local Knowledge: A substitution cipher where the key is hidden in local historical facts
+- Math + Observation: Calculate distances using pub measurements, then observe patterns in the results
+- Wordplay + Pattern: An anagram that reveals a sequence, which then needs to be continued
+
+PROGRESSIVE REVELATION:
+- Early puzzle gives partial information that becomes crucial in later puzzles
+- Each solved puzzle reveals a piece of a larger meta-puzzle
+- Character backstories are revealed through puzzle solutions
+
+ENVIRONMENTAL INTEGRATION:
+- Puzzles that require players to physically interact with the pub environment
+- Use of actual pub features (beer taps, historical photos, architectural details)
+- Integration with pub staff or regular customers as puzzle elements
 
 STORY EXCELLENCE EXAMPLES:
 - Characters with hidden motivations that are revealed through puzzle solutions
@@ -312,7 +417,181 @@ REAL PUB CRAWL ROUTE EXAMPLES TO RESEARCH:
 - Food and drink tour company routes
 - Local bar association or pub guide recommendations
 
-CRITICAL: You MUST respond with ONLY valid JSON in the following format. Do not include any text before or after the JSON. Do not use markdown code blocks. Return ONLY the JSON object.
+🚨 PUZZLE GENERATION REQUIREMENTS 🚨:
+- You MUST use at least 5 different puzzle types across the entire game
+- No single puzzle type can exceed 30% of total puzzles
+- Include puzzles from all categories: reasoning (logic/deduction), creative (wordplay/pattern), analytical (math/observation), contextual (local/cipher)
+- Vary difficulty levels within each puzzle type
+- Include at least one multi-step puzzle and one hybrid puzzle
+- Ensure puzzles build on each other and reveal story elements progressively
+
+🚨 CRITICAL PUZZLE CONTENT REQUIREMENTS 🚨:
+- Each puzzle MUST have COMPLETE, SOLVABLE content - not just concepts or ideas
+- The "content" field must contain the actual puzzle data, questions, or materials needed to solve it
+- The "answer" field must be the EXACT, SPECIFIC solution (not just "the answer" or "solution")
+- The "clues" field must contain 3 PROGRESSIVE hints that actually help solve the puzzle
+- Each puzzle must be immediately playable without additional setup or explanation
+- Puzzles must be specific to the pub location and story context
+- Include actual data, numbers, text, or materials that players can work with
+
+PUZZLE CONTENT EXAMPLES BY TYPE:
+
+LOGIC PUZZLE EXAMPLE:
+{
+  "title": "The Bartender's Alibi",
+  "narrative": "The bartender claims he was cleaning glasses when the incident occurred. Three witnesses give conflicting statements about what they saw.",
+  "type": "logic",
+  "content": "Witness A: 'I saw the bartender cleaning glasses at 8:30 PM, but he was using a red cloth, not blue.' Witness B: 'The bartender was definitely cleaning glasses at 8:30 PM with a blue cloth, and he was humming a tune.' Witness C: 'I didn't see the bartender cleaning glasses at 8:30 PM, but I heard humming from behind the bar.' The pub's security log shows: '8:30 PM - Bartender on duty, cleaning supplies: 1 red cloth, 1 blue cloth, 1 yellow cloth.' If only one witness is telling the complete truth, who is it?",
+  "answer": "Witness B",
+  "clues": [
+    "Consider what each witness claims about the cloth color and compare it to the available supplies.",
+    "Think about what would be impossible if someone was lying about seeing the bartender.",
+    "If someone is telling the complete truth, their statement must be consistent with the available evidence."
+  ],
+  "difficulty": 3,
+  "order": 1,
+  "localContext": "This puzzle uses the pub's actual cleaning supplies and witness testimony to determine credibility."
+}
+
+CIPHER PUZZLE EXAMPLE:
+{
+  "title": "The Hidden Message",
+  "narrative": "A cryptic message was found written on the back of a historical menu from 1923. The pub's founder was known to use simple substitution ciphers.",
+  "type": "cipher",
+  "content": "Encrypted message: 'QEB NRFZH YOLTK CLU GRJMP LSBO QEB IXWV ALD' The pub was founded in 1923. The founder's favorite saying was 'The early bird catches the worm.' Use this information to decode the message.",
+  "answer": "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+  "clues": [
+    "The founder's favorite saying might give you a clue about the cipher key.",
+    "This is a Caesar cipher - try shifting the alphabet by different amounts.",
+    "The year 1923 might be significant for determining the shift value."
+  ],
+  "difficulty": 4,
+  "order": 2,
+  "localContext": "This puzzle connects to the pub's founding year and the founder's personal preferences."
+}
+
+MATH PUZZLE EXAMPLE:
+{
+  "title": "The Delivery Schedule",
+  "narrative": "The pub receives deliveries on specific days. The delivery schedule holds the key to understanding when the incident occurred.",
+  "type": "math",
+  "content": "The pub receives beer deliveries every 3 days, wine deliveries every 5 days, and food deliveries every 7 days. All three deliveries occurred on the same day 15 days ago. Today is Tuesday. What day of the week did all three deliveries last occur together?",
+  "answer": "Thursday",
+  "clues": [
+    "Find the Least Common Multiple (LCM) of 3, 5, and 7 to determine the cycle length.",
+    "Calculate how many complete cycles have passed in 15 days.",
+    "Work backwards from Tuesday to find the day when all deliveries last coincided."
+  ],
+  "difficulty": 3,
+  "order": 3,
+  "localContext": "This puzzle uses the pub's actual delivery schedule to establish a timeline."
+}
+
+WORDPLAY PUZZLE EXAMPLE:
+{
+  "title": "The Anagram Clue",
+  "narrative": "A suspect's name was found written as an anagram on a napkin. The letters spell out the location of hidden evidence.",
+  "type": "wordplay",
+  "content": "The letters 'R E T A W L O O F' were found written on a napkin. Rearrange these letters to form a two-word phrase that describes where evidence might be hidden. The phrase relates to a common feature found in this type of establishment.",
+  "answer": "WATER FOOL (or 'FOOL WATER' - both are valid anagrams)",
+  "clues": [
+    "Look for common words that might be found in a pub setting.",
+    "Think about what 'water' might refer to in a drinking establishment.",
+    "Consider that 'fool' might be a playful term for something else."
+  ],
+  "difficulty": 2,
+  "order": 4,
+  "localContext": "This puzzle uses pub terminology and wordplay to reveal a hiding place."
+}
+
+OBSERVATION PUZZLE EXAMPLE:
+{
+  "title": "The Architectural Clue",
+  "narrative": "The pub's architecture holds a hidden message. Count the specific features to reveal a code.",
+  "type": "observation",
+  "content": "Look around the pub and count: 1) The number of wooden beams visible in the ceiling, 2) The number of brass fixtures (light fixtures, door handles, etc.), 3) The number of windows facing the street. Add these three numbers together. The result is a two-digit number. What is it?",
+  "answer": "47",
+  "clues": [
+    "Start by counting the most obvious features - the wooden ceiling beams.",
+    "Look for all brass-colored metal fixtures, not just the most prominent ones.",
+    "Count only the windows that face outward toward the street, not internal windows."
+  ],
+  "difficulty": 2,
+  "order": 5,
+  "localContext": "This puzzle requires players to actually observe and count real architectural features in the pub."
+}
+
+DEDUCTION PUZZLE EXAMPLE:
+{
+  "title": "The Timeline Mystery",
+  "narrative": "Three people entered the pub at different times. Their alibis don't match the security footage. Determine who is lying.",
+  "type": "deduction",
+  "content": "Security log shows: 7:45 PM - Person A enters, 8:15 PM - Person B enters, 8:30 PM - Person C enters. Person A claims: 'I was here for 45 minutes and left before Person B arrived.' Person B claims: 'I arrived at 8:15 PM and Person A was still here when I left at 9:00 PM.' Person C claims: 'I arrived at 8:30 PM and both Person A and Person B were still here.' The security log shows Person A left at 8:20 PM. Who is lying?",
+  "answer": "Person B",
+  "clues": [
+    "Compare each person's claims with the security log timestamps.",
+    "If Person A left at 8:20 PM, could Person B have seen them when leaving at 9:00 PM?",
+    "Check if Person B's claim about Person A being there when they left contradicts the security log."
+  ],
+  "difficulty": 4,
+  "order": 6,
+  "localContext": "This puzzle uses the pub's actual security system and timing to determine credibility."
+}
+
+LOCAL KNOWLEDGE PUZZLE EXAMPLE:
+{
+  "title": "The Historical Connection",
+  "narrative": "The pub's history holds the key to understanding the current mystery. A famous event occurred nearby that's relevant to the case.",
+  "type": "local",
+  "content": "In 1963, a famous incident occurred at [CITY]'s [SPECIFIC LOCATION NEAR PUB]. The incident involved [SPECIFIC HISTORICAL DETAILS]. The pub was established in [YEAR] and was frequented by [SPECIFIC HISTORICAL FIGURES]. The current mystery involves someone who claims to be related to one of these historical figures. Based on the historical records, what was the name of the person who [SPECIFIC HISTORICAL ACTION]?",
+  "answer": "[SPECIFIC HISTORICAL NAME]",
+  "clues": [
+    "Research the famous 1963 incident that occurred near this pub location.",
+    "Consider who would have been involved in this type of historical event.",
+    "Think about what name would be associated with the specific action mentioned."
+  ],
+  "difficulty": 3,
+  "order": 7,
+  "localContext": "This puzzle connects the current mystery to actual historical events that occurred near the pub."
+}
+
+PATTERN PUZZLE EXAMPLE:
+{
+  "title": "The Sequence Code",
+  "narrative": "A series of numbers was found written on the pub's historical ledger. The pattern reveals a hidden message.",
+  "type": "pattern",
+  "content": "The following sequence was found: 2, 5, 11, 23, 47, 95, ?. Each number in the sequence follows a specific mathematical pattern. What is the next number in the sequence? Use this number to decode the message: 'The answer is hidden in the [NUMBER]th word of the pub's motto.' The pub's motto is 'Quality, Tradition, Excellence, Heritage, Community, Service, Integrity, Innovation.'",
+  "answer": "Heritage",
+  "clues": [
+    "Look at the difference between consecutive numbers to find the pattern.",
+    "The pattern involves doubling and adding 1: 2×2+1=5, 5×2+1=11, etc.",
+    "Apply the pattern to find the next number, then count to that word in the motto."
+  ],
+  "difficulty": 4,
+  "order": 8,
+  "localContext": "This puzzle uses the pub's actual motto and a mathematical sequence to reveal hidden information."
+}
+
+🚨 FINAL PUZZLE VALIDATION CHECKLIST 🚨:
+Before finalizing your response, verify each puzzle has:
+✓ Complete, solvable content with specific data/numbers/text
+✓ Exact, specific answer (not generic responses)
+✓ 3 progressive clues that actually help solve the puzzle
+✓ Clear connection to the pub location and story
+✓ Appropriate difficulty level for the puzzle type
+✓ No placeholder text or incomplete information
+✓ Immediate playability without additional setup
+
+🚨🚨🚨 CRITICAL JSON FORMAT REQUIREMENT 🚨🚨🚨
+You MUST respond with ONLY valid JSON. Do NOT include:
+- Any explanatory text before or after the JSON
+- Markdown code blocks (backticks with json or plain backticks)
+- Any comments or notes
+- Any additional formatting
+
+Start your response with { and end with }. That's it.
+
+Return ONLY the JSON object in the following format:
 
 🚨 ABSOLUTE REQUIREMENTS FOR PUB DATA 🚨:
 - Do NOT use placeholder text like "Another pub in..." or "needs research"
@@ -321,6 +600,15 @@ CRITICAL: You MUST respond with ONLY valid JSON in the following format. Do not 
 - You MUST provide complete information for EVERY pub
 - If you cannot find enough real pubs in the specified area, use fewer pubs
 - Every pub must have a real name, real venue type, and real details
+
+🚨 ROUTE VALIDATION REQUIREMENTS 🚨:
+- Pubs MUST be within reasonable walking distance (5-15 minutes between each pub)
+- Total route distance should be 1-3 miles maximum for a comfortable pub crawl
+- Pubs should follow a logical, walkable route (not scattered across the city)
+- Consider real-world factors: busy roads, pedestrian access, safety
+- Provide accurate walking times between pubs (5-15 minutes each)
+- Ensure the route makes sense for a pub crawl experience
+- Include area descriptions that help verify the route is walkable
 
 {
   "story": {
@@ -352,19 +640,19 @@ CRITICAL: You MUST respond with ONLY valid JSON in the following format. Do not 
   ],
   "puzzles": [
     {
-      "title": "Puzzle Title",
-      "narrative": "Detailed puzzle setup and context that connects to the story",
+      "title": "Specific Puzzle Title",
+      "narrative": "Detailed puzzle setup and context that connects to the story and pub location",
       "type": "logic|observation|cipher|deduction|local|wordplay|math|pattern",
-      "content": "The actual puzzle content with clear instructions",
-      "answer": "Correct answer (be specific and exact)",
+      "content": "COMPLETE PUZZLE DATA: Include all necessary information, questions, data, or materials needed to solve the puzzle. This must be immediately solvable without additional setup. Include specific numbers, text, witness statements, or other concrete data.",
+      "answer": "EXACT SOLUTION: The precise, specific answer that solves the puzzle (not just 'the answer' or 'solution')",
       "clues": [
-        "Progressive hint 1 (subtle)",
-        "Progressive hint 2 (more obvious)", 
-        "Progressive hint 3 (very clear)"
+        "Progressive hint 1 (subtle but helpful)",
+        "Progressive hint 2 (more direct guidance)", 
+        "Progressive hint 3 (very clear solution path)"
       ],
       "difficulty": 1-5,
       "order": 1,
-      "localContext": "How this puzzle relates to ${request.city} specifically"
+      "localContext": "How this puzzle specifically relates to ${request.city} and this pub location"
     }
   ]
 }
@@ -446,16 +734,62 @@ ${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pu
         console.error('JSON parse error:', parseError)
         console.error('Problematic JSON string:', jsonString)
         
-        // Try to clean up common JSON issues
-        const cleanedJson = jsonString
+        // Try multiple cleanup strategies
+        let cleanedJson = jsonString
+        
+        // Strategy 1: Basic cleanup
+        cleanedJson = cleanedJson
           .replace(/,\s*}/g, '}') // Remove trailing commas before }
           .replace(/,\s*]/g, ']') // Remove trailing commas before ]
           .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Add quotes around unquoted keys
           .replace(/:\s*([^",{\[\s][^",}\]\s]*)/g, ': "$1"') // Add quotes around unquoted string values
         
-        console.log('Attempting to parse cleaned JSON:', cleanedJson)
-        parsed = JSON.parse(cleanedJson)
-        console.log('Successfully parsed cleaned JSON:', parsed)
+        try {
+          parsed = JSON.parse(cleanedJson)
+          console.log('Successfully parsed with basic cleanup:', parsed)
+        } catch (cleanupError) {
+          console.error('Basic cleanup failed, trying advanced cleanup...')
+          
+          // Strategy 2: Advanced cleanup
+          cleanedJson = jsonString
+            .replace(/```json\s*/g, '') // Remove any remaining markdown
+            .replace(/```\s*/g, '') // Remove any remaining markdown
+            .replace(/^[^{]*/, '') // Remove anything before first {
+            .replace(/[^}]*$/, '') // Remove anything after last }
+            .replace(/,\s*}/g, '}') // Remove trailing commas
+            .replace(/,\s*]/g, ']') // Remove trailing commas
+            .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Quote unquoted keys
+            .replace(/:\s*([^",{\[\s][^",}\]\s]*?)(\s*[,}\]])/g, ': "$1"$2') // Quote unquoted values
+            .replace(/\\/g, '\\\\') // Escape backslashes
+            .replace(/"/g, '\\"') // Escape quotes in strings
+            .replace(/\\"/g, '"') // Fix double-escaped quotes
+        
+          try {
+            parsed = JSON.parse(cleanedJson)
+            console.log('Successfully parsed with advanced cleanup:', parsed)
+          } catch (advancedError) {
+            console.error('Advanced cleanup also failed:', advancedError)
+            console.error('Final cleaned JSON:', cleanedJson)
+            
+            // Strategy 3: Try to extract just the essential parts
+            try {
+              const storyMatch = jsonString.match(/"story"\s*:\s*\{[^}]*\}/)
+              const locationsMatch = jsonString.match(/"locations"\s*:\s*\[[^\]]*\]/)
+              const puzzlesMatch = jsonString.match(/"puzzles"\s*:\s*\[[^\]]*\]/)
+              
+              if (storyMatch && locationsMatch && puzzlesMatch) {
+                const minimalJson = `{${storyMatch[0]},${locationsMatch[0]},${puzzlesMatch[0]}}`
+                parsed = JSON.parse(minimalJson)
+                console.log('Successfully parsed minimal JSON:', parsed)
+              } else {
+                throw new Error('Could not extract essential JSON parts')
+              }
+            } catch (minimalError) {
+              console.error('Minimal extraction failed:', minimalError)
+              throw new Error(`JSON parsing failed after all cleanup attempts: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
+            }
+          }
+        }
       }
       
       // Validate the response structure
