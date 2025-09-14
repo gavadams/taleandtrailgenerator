@@ -157,7 +157,7 @@ export class PuzzleTemplateService {
       name: 'The Architectural Clue',
       type: 'observation',
       category: 'analytical',
-      mechanics: ['environmental', 'physical'],
+      mechanics: ['environmental', 'multi-step'],
       difficulty: 2,
       template: {
         title: 'The Architectural Clue',
@@ -526,7 +526,7 @@ export class PuzzleTemplateService {
       estimatedSolveTime: template.estimatedSolveTime,
       requiresTeamwork: template.mechanics.includes('collaborative'),
       requiresPhysicalInteraction: template.mechanics.includes('environmental') || 
-        template.mechanics.includes('physical'),
+        template.type === 'physical',
       requiresLocalKnowledge: template.type === 'local',
       isMultiStep: template.mechanics.includes('multi-step')
     }
