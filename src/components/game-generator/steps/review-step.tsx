@@ -422,12 +422,6 @@ export function ReviewStep({ gameData, onSave, onBack }: ReviewStepProps) {
                       )}
                     </div>
                   )}
-                  {editedData.template && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-600">Template:</span>
-                      <span className="text-sm bg-indigo-100 text-indigo-800 px-2 py-1 rounded">{editedData.template.name}</span>
-                    </div>
-                  )}
                   {editedData.cityArea && (
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium text-gray-600">Area:</span>

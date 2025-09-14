@@ -95,7 +95,7 @@ export function LocationSetupStep({ gameData, onComplete }: LocationSetupStepPro
                       <Label htmlFor={`name-${index}`}>Pub Name</Label>
                       <Input
                         id={`name-${index}`}
-                        placeholder={`e.g., The Crown & Anchor`}
+                        placeholder={`e.g., The Local Tavern`}
                         value={location.actualName}
                         onChange={(e) => updateLocation(index, 'actualName', e.target.value)}
                       />

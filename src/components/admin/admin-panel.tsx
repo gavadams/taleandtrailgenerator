@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Users, Crown, User, Plus, Trash2, ArrowLeft, BookOpen } from 'lucide-react'
 // Removed direct client import - using API routes instead
 import { toast } from 'sonner'
-import { TemplateManagement } from './template-management'
 
 interface UserProfile {
   id: string
@@ -32,7 +31,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
   const [newUserRole, setNewUserRole] = useState<'user' | 'admin'>('user')
   const [addingUser, setAddingUser] = useState(false)
   const [cleaningUp, setCleaningUp] = useState(false)
-  const [activeTab, setActiveTab] = useState<'users' | 'templates' | 'cleanup'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'cleanup'>('users')
 
   useEffect(() => {
     loadUsers()
@@ -224,14 +223,6 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
             <span>Users</span>
           </Button>
           <Button
-            variant={activeTab === 'templates' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('templates')}
-            className="flex items-center space-x-2"
-          >
-            <BookOpen className="h-4 w-4" />
-            <span>Templates</span>
-          </Button>
-          <Button
             variant={activeTab === 'cleanup' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('cleanup')}
             className="flex items-center space-x-2"
@@ -369,9 +360,6 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
         </Card>
         )}
 
-        {activeTab === 'templates' && (
-          <TemplateManagement />
-        )}
 
         {activeTab === 'cleanup' && (
           <Card>

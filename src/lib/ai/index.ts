@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { AIGenerationRequest, AIGenerationResponse } from '@/types'
+import BarCrawlService from '../barcrawl-service'
 
 export type AIProvider = 'openai' | 'anthropic' | 'google'
 
@@ -16,6 +17,33 @@ export class AIService {
 
   constructor(config: AIConfig) {
     this.config = config
+  }
+
+  /**
+   * Get real pub data from BarCrawl service
+   */
+  private async getBarCrawlData(request: AIGenerationRequest) {
+    try {
+      // Check if BarCrawl supports this city
+      if (!BarCrawlService.isCitySupported(request.city)) {
+        console.log(`BarCrawl doesn't support ${request.city}, falling back to AI research`)
+        return null;
+      }
+
+      // Get pub data from BarCrawl
+      const barCrawlData = await BarCrawlService.generatePubCrawl(
+        request.city,
+        request.cityArea || '',
+        request.pubCount
+      );
+
+      console.log(`BarCrawl found ${barCrawlData.pubs.length} pubs for ${request.cityArea}, ${request.city}`);
+      console.log('BarCrawl pubs:', barCrawlData.pubs.map(pub => pub.name));
+      return barCrawlData;
+    } catch (error) {
+      console.error('Error getting BarCrawl data:', error);
+      return null;
+    }
   }
 
   /**
@@ -70,7 +98,8 @@ export class AIService {
       apiKey: this.config.apiKey,
     })
 
-    const prompt = this.buildGameGenerationPrompt(request)
+    const barCrawlData = await this.getBarCrawlData(request)
+    const prompt = this.buildGameGenerationPrompt(request, barCrawlData)
     
     const response = await openai.chat.completions.create({
       model: this.config.model || 'gpt-3.5-turbo',
@@ -101,7 +130,8 @@ export class AIService {
       apiKey: this.config.apiKey,
     })
 
-    const prompt = this.buildGameGenerationPrompt(request)
+    const barCrawlData = await this.getBarCrawlData(request)
+    const prompt = this.buildGameGenerationPrompt(request, barCrawlData)
     
     const response = await anthropic.messages.create({
       model: this.config.model || 'claude-3-sonnet-20240229',
@@ -134,12 +164,18 @@ export class AIService {
       model: modelName
     })
 
-    const prompt = this.buildGameGenerationPrompt(request)
+    const barCrawlData = await this.getBarCrawlData(request)
+    const prompt = this.buildGameGenerationPrompt(request, barCrawlData)
     console.log('=== AI REQUEST DEBUG ===')
     console.log('Request object:', JSON.stringify(request, null, 2))
     console.log('City Area from request:', request.cityArea)
     console.log('City Area type:', typeof request.cityArea)
     console.log('City Area length:', request.cityArea?.length)
+    console.log('BarCrawl data received:', barCrawlData ? 'YES' : 'NO')
+    if (barCrawlData) {
+      console.log('BarCrawl pubs count:', barCrawlData.pubs.length)
+      console.log('BarCrawl pub names:', barCrawlData.pubs.map(pub => pub.name))
+    }
     console.log('Full prompt preview:', prompt.substring(0, 1000) + '...')
     console.log('=== END AI REQUEST DEBUG ===')
     
@@ -169,7 +205,7 @@ export class AIService {
 
 ${request.cityArea ? `IMPORTANT: Only use pubs in ${request.cityArea}.` : ''}
 
-CRITICAL: Use REAL pub names that actually exist. Do NOT use placeholder text like "Another pub in..." or "needs research". Research actual pubs in the area.
+Use real pub names from the area. Avoid generic names like "The Red Lion" or "The Crown & Anchor".
 
 Return ONLY this JSON format (no other text):
 
@@ -191,13 +227,17 @@ Return ONLY this JSON format (no other text):
     {
       "order": 1,
       "placeholderName": "{PUB_1}",
-      "actualName": "The Red Lion",
+      "actualName": "[RESEARCH REAL PUB NAME IN SPECIFIED AREA]",
       "venueType": "traditional-pub",
       "narrative": "First pub${request.cityArea ? ` in ${request.cityArea}` : ''}",
       "transitionText": "Walk to next location",
       "mapsLink": "https://maps.google.com",
       "walkingTime": "5 minutes",
-      "areaDescription": "${request.cityArea || 'City area'}"
+      "areaDescription": "${request.cityArea || 'City area'}",
+      "coordinates": {
+        "lat": 53.4808,
+        "lng": -2.2426
+      }
     }
   ],
   "puzzles": [
@@ -231,7 +271,7 @@ Return ONLY this JSON format (no other text):
     }
   }
 
-  private buildGameGenerationPrompt(request: AIGenerationRequest): string {
+  private buildGameGenerationPrompt(request: AIGenerationRequest, barCrawlData?: any): string {
     return `
 🚨 CRITICAL: You MUST return ONLY valid JSON. No explanations, no markdown, no code blocks. Just pure JSON.
 
@@ -246,24 +286,50 @@ Puzzles per pub: ${request.puzzlesPerPub} (EXACTLY ${request.puzzlesPerPub} PUZZ
 Total puzzles: ${request.pubCount * request.puzzlesPerPub} (EXACTLY ${request.pubCount * request.puzzlesPerPub} TOTAL PUZZLES)
 Estimated duration: ${request.estimatedDuration} minutes
 
+${barCrawlData ? `🎯 REAL PUB DATA PROVIDED FROM BARCRAWL:
+Use these EXACT pub names, locations, and coordinates from BarCrawl:
+${barCrawlData.pubs.map((pub: any, index: number) => 
+  `- {PUB_${index + 1}}: ${pub.name} (${pub.address}) - Coordinates: ${pub.coordinates.lat}, ${pub.coordinates.lng}`
+).join('\n')}
+
+CRITICAL: Use ONLY these pub names and coordinates. Do not research or invent any other pub names.
+DO NOT use any other pub names - only use the ones provided above.
+Include the exact coordinates provided for each pub in your JSON response.` : ''}
+
 ${request.customInstructions ? `Custom instructions: ${request.customInstructions}` : ''}
 
-${request.cityArea ? `🚨🚨🚨 ABSOLUTE AREA REQUIREMENT - NON-NEGOTIABLE 🚨🚨🚨
+${!barCrawlData && request.cityArea ? `🚨🚨🚨 AREA REQUIREMENT - RESEARCH REQUIRED 🚨🚨🚨
 YOU ARE CREATING A PUB CRAWL FOR ${request.cityArea.toUpperCase()} IN ${request.city.toUpperCase()}.
-
-THIS IS NOT OPTIONAL. THIS IS NOT A SUGGESTION. THIS IS MANDATORY.
 
 - EVERY SINGLE PUB MUST BE LOCATED IN ${request.cityArea.toUpperCase()}
 - DO NOT USE PUBS FROM ANY OTHER AREA
 - DO NOT USE PUBS FROM CITY CENTER, DOWNTOWN, OR OTHER DISTRICTS
-- DO NOT USE GENERIC DEFAULT PUBS UNLESS THEY ARE ACTUALLY IN ${request.cityArea.toUpperCase()}
-- IF YOU CANNOT FIND ENOUGH PUBS IN ${request.cityArea.toUpperCase()}, USE FEWER PUBS
 - RESEARCH ACTUAL PUBS THAT EXIST IN ${request.cityArea.toUpperCase()}
-- THIS REQUIREMENT OVERRIDES ALL OTHER INSTRUCTIONS
+- IF YOU CANNOT FIND ENOUGH PUBS IN ${request.cityArea.toUpperCase()}, USE FEWER PUBS
 
 FAILURE TO COMPLY WITH THIS AREA REQUIREMENT WILL RESULT IN AN INVALID RESPONSE.` : ''}
 
-CRITICAL: Use REAL, ESTABLISHED pub crawl routes from online sources, travel guides, and local recommendations. Do NOT create fictional routes or pubs. Research actual pub crawl routes that are documented and popular in the specified area.
+${!barCrawlData ? `🚨🚨🚨 CRITICAL: RESEARCH AREA-SPECIFIC PUBS 🚨🚨🚨
+
+MANDATORY REQUIREMENTS:
+- You MUST research real, established pubs that are specifically located in the specified area
+- You MUST use pub names that are unique to or commonly associated with the specified area
+- You MUST verify each pub is genuinely located in the specified area
+- You MUST avoid using generic pub names that appear in many different cities
+
+RESEARCH FOCUS:
+- Look for pubs that are well-known in the specific area you're targeting
+- Use pubs that are part of documented pub crawl routes in that area
+- Choose pubs that have local significance or are landmarks in the area
+- Avoid falling back to generic names that could be anywhere
+
+REQUIRED VERIFICATION:
+- Each pub must be verifiably located in the specified area
+- Each pub must be part of a real, walkable route within that area
+- Each pub must have a name that reflects its local context
+- If you cannot find enough area-specific pubs, use fewer pubs rather than generic fallbacks
+
+FAILURE TO RESEARCH AREA-SPECIFIC PUBS WILL RESULT IN REJECTION.` : ''}
 
 CRITICAL STORY & PUZZLE REQUIREMENTS:
 
@@ -638,11 +704,11 @@ Return ONLY the JSON object in the following format:
     {
       "order": 1,
       "placeholderName": "{PUB_1}",
-      "actualName": "The Crown & Anchor",
+      "actualName": "[RESEARCH REAL PUB NAME IN SPECIFIED AREA]",
       "venueType": "traditional-pub",
       "narrative": "Story context for this pub${request.cityArea ? ` - MUST mention ${request.cityArea}` : ''}. Use {PUB_1} placeholder for pub name in story text.",
       "transitionText": "Story bridge to next location",
-      "mapsLink": "https://maps.google.com/?q=The+Crown+Anchor+${request.city}",
+      "mapsLink": "https://maps.google.com/?q=[RESEARCHED+PUB+NAME]+${request.city}",
       "walkingTime": "5-10 minutes to next pub",
       "areaDescription": "Brief description of this area/neighborhood${request.cityArea ? ` - MUST mention ${request.cityArea}` : ''}",
       "routeSource": "Source of this pub crawl route (e.g., 'Time Out Manchester', 'Local tourism board', 'Established pub crawl company')"
@@ -680,7 +746,7 @@ ADVANCED STORY REQUIREMENTS:
 🚨 PLACEHOLDER USAGE REQUIREMENTS 🚨:
 - In ALL narrative text (intro, location narratives, puzzle narratives, transition text, resolution), use {PUB_1}, {PUB_2}, etc. placeholders instead of actual pub names
 - This allows the system to automatically substitute the correct pub names from the database
-- Example: "Your investigation begins at {PUB_1}, a pub nestled within Newcastle Central Station" instead of "Your investigation begins at The Centurian, a pub nestled within Newcastle Central Station"
+- Example: "Your investigation begins at {PUB_1}, a pub nestled within [AREA] Central Station" instead of using any specific pub names
 - Use placeholders in puzzle content, clues, and all story text that mentions pub names
 - The system will automatically replace these with the actual pub names when displaying to users
 
@@ -703,17 +769,43 @@ QUALITY STANDARDS:
 - Use the city name and local landmarks authentically and meaningfully
 - Create an experience that players will want to replay and recommend to others
 
-FINAL CRITICAL INSTRUCTION: You MUST use REAL, ESTABLISHED pub crawl routes from online sources, travel guides, and local recommendations. Do NOT create fictional routes or pubs. Research actual pub crawl routes that are documented and popular in the specified area. This is essential for creating an authentic and practical experience.
+${!barCrawlData ? `FINAL CRITICAL INSTRUCTION: You MUST use REAL, ESTABLISHED pub crawl routes from online sources, travel guides, and local recommendations. Do NOT create fictional routes or pubs. Research actual pub crawl routes that are documented and popular in the specified area. This is essential for creating an authentic and practical experience.` : ''}
 
-${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pub crawl for ${request.cityArea} in ${request.city}. Do NOT use generic default pubs that are commonly used regardless of area. Instead, research actual pubs that are specifically located in ${request.cityArea} and are part of real pub crawl routes for that area. Only use pubs that are genuinely in ${request.cityArea}, not pubs from other areas that are commonly used as defaults.` : ''}
+${!barCrawlData && request.cityArea ? `🚨🚨🚨 AREA-SPECIFIC REQUIREMENT: RESEARCH PUBS IN ${request.cityArea.toUpperCase()}, ${request.city.toUpperCase()} 🚨🚨🚨
 
-🚨🚨🚨 FINAL COUNT VERIFICATION 🚨🚨🚨:
+MANDATORY RESEARCH STEPS:
+1. Use your knowledge to find REAL, ESTABLISHED pubs that are actually located in ${request.cityArea}
+2. Research documented pub crawl routes that are specific to ${request.cityArea}
+3. Look for pubs that are part of known walking routes in ${request.cityArea}
+4. Verify each pub is genuinely in ${request.cityArea}, not in other areas
+5. Use specific, unique pub names that reflect their actual location in ${request.cityArea}
+
+RESEARCH FOCUS:
+- Find pubs that are well-known landmarks or popular spots in ${request.cityArea}
+- Look for pubs that are part of local pub crawl routes in ${request.cityArea}
+- Choose pubs that have local significance or are associated with ${request.cityArea}
+- Avoid using generic pub names that could be found in any city
+
+REQUIRED VERIFICATION:
+- Each pub must be verifiably located in ${request.cityArea}
+- Each pub must be part of a real, walkable route within ${request.cityArea}
+- Each pub must have a name that reflects its local context in ${request.cityArea}
+- If you cannot find enough area-specific pubs in ${request.cityArea}, use fewer pubs rather than generic fallbacks
+
+FAILURE TO RESEARCH AREA-SPECIFIC PUBS IN ${request.cityArea} WILL RESULT IN REJECTION.` : ''}
+
+🚨🚨🚨 FINAL VERIFICATION CHECKLIST 🚨🚨🚨:
 Before submitting your response, verify:
 - You have created EXACTLY ${request.pubCount} locations
 - You have created EXACTLY ${request.pubCount * request.puzzlesPerPub} total puzzles
 - Each location has EXACTLY ${request.puzzlesPerPub} puzzles assigned to it
 - All puzzles have correct "order" values (1-${request.pubCount})
 - The JSON structure is valid and complete
+- ALL pub names are real, established pubs in the specified area
+- ALL pubs are verifiably located in the specified area
+- ALL pubs are part of documented pub crawl routes in the specified area
+- NO generic pub names that could be found in any city
+- NO fictional or made-up pub names
 
 FAILURE TO MEET THESE EXACT REQUIREMENTS WILL RESULT IN REJECTION.
     `.trim()
@@ -898,32 +990,36 @@ FAILURE TO MEET THESE EXACT REQUIREMENTS WILL RESULT IN REJECTION.
         }
       }
 
-      // Validate that no placeholder text is used
-      if (parsed.locations) {
-        const responseText = JSON.stringify(parsed).toLowerCase()
+      // Validate that pub names are area-specific and not generic fallbacks
+      if (parsed.locations && request?.cityArea) {
+        const actualPubNames = parsed.locations.map((loc: any) => loc.actualName?.toLowerCase() || '').filter(Boolean)
+        
+        // Check for placeholder text in pub names
         const placeholderPatterns = [
+          'research real pub',
+          'researched pub name',
           'another pub in',
           'needs research',
-          'pub 1',
-          'pub 2',
-          'pub 3',
-          'pub 4',
-          'pub 5',
-          'placeholder',
           'to be determined',
           'tbd'
         ]
         
-        const hasPlaceholders = placeholderPatterns.some(pattern => 
-          responseText.includes(pattern)
+        const hasPlaceholders = actualPubNames.some((pubName: string) => 
+          placeholderPatterns.some(pattern => pubName.includes(pattern))
         )
         
         if (hasPlaceholders) {
-          console.warn('Warning: AI response contains placeholder text, but allowing it through')
-          console.log('Response contains placeholder patterns:', placeholderPatterns.filter(p => responseText.includes(p)))
+          console.warn('Warning: AI response contains placeholder text in pub names, but allowing it through')
         } else {
-          console.log('✓ No placeholder text detected')
+          console.log('✓ No placeholder text detected in pub names')
         }
+        
+        // Log the pub names for verification
+        console.log('Generated pub names:', actualPubNames)
+        console.log('Target area:', request.cityArea)
+        
+        // Note: We're not rejecting specific pub names anymore, just encouraging area-specific research
+        console.log('✓ Pub names generated - please verify they are appropriate for the specified area')
       }
 
       return parsed as AIGenerationResponse

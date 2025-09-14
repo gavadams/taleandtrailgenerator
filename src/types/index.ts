@@ -77,16 +77,6 @@ export interface Game {
   userId: string
 }
 
-export interface GameTemplate {
-  id: string
-  name: string
-  theme: Theme
-  description: string
-  storyFramework: string
-  characterTypes: string[]
-  puzzleTypes: PuzzleType[]
-  difficulty: Difficulty
-}
 
 export interface UserProfile {
   id: string

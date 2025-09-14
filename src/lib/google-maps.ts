@@ -7,7 +7,7 @@
 
 export const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyBFw0Qbyq9zTFTd-tUY6dOWWgE4l7I9F8k'
 
-export const generateGoogleMapsEmbedUrl = (locations: Array<{actualName?: string, placeholderName?: string, order: number}>) => {
+export const generateGoogleMapsEmbedUrl = (locations: Array<{actualName?: string, placeholderName?: string, order: number, coordinates?: {lat: number, lng: number}}>) => {
   console.log('generateGoogleMapsEmbedUrl called with:', locations)
   
   if (locations.length < 2) {
@@ -18,14 +18,22 @@ export const generateGoogleMapsEmbedUrl = (locations: Array<{actualName?: string
   const sortedLocations = locations.sort((a, b) => a.order - b.order)
   console.log('Sorted locations:', sortedLocations)
   
-  const origin = sortedLocations[0]?.actualName || sortedLocations[0]?.placeholderName || `Pub ${sortedLocations[0]?.order}`
-  const destination = sortedLocations[sortedLocations.length - 1]?.actualName || sortedLocations[sortedLocations.length - 1]?.placeholderName || `Pub ${sortedLocations[sortedLocations.length - 1]?.order}`
+  // Use coordinates if available, otherwise fall back to names
+  const origin = sortedLocations[0]?.coordinates 
+    ? `${sortedLocations[0].coordinates.lat},${sortedLocations[0].coordinates.lng}`
+    : sortedLocations[0]?.actualName || sortedLocations[0]?.placeholderName || `Pub ${sortedLocations[0]?.order}`
+  
+  const destination = sortedLocations[sortedLocations.length - 1]?.coordinates
+    ? `${sortedLocations[sortedLocations.length - 1].coordinates!.lat},${sortedLocations[sortedLocations.length - 1].coordinates!.lng}`
+    : sortedLocations[sortedLocations.length - 1]?.actualName || sortedLocations[sortedLocations.length - 1]?.placeholderName || `Pub ${sortedLocations[sortedLocations.length - 1]?.order}`
   
   console.log('Origin:', origin, 'Destination:', destination)
   
   // Add waypoints for intermediate locations
   const waypoints = sortedLocations.slice(1, -1)
-    .map(loc => loc.actualName || loc.placeholderName || `Pub ${loc.order}`)
+    .map(loc => loc.coordinates 
+      ? `${loc.coordinates.lat},${loc.coordinates.lng}`
+      : loc.actualName || loc.placeholderName || `Pub ${loc.order}`)
     .join('|')
   
   console.log('Waypoints:', waypoints)
@@ -46,7 +54,7 @@ export const generateGoogleMapsEmbedUrl = (locations: Array<{actualName?: string
   return finalUrl
 }
 
-export const generateGoogleMapsDirectionsUrl = (locations: Array<{actualName?: string, placeholderName?: string, order: number}>) => {
+export const generateGoogleMapsDirectionsUrl = (locations: Array<{actualName?: string, placeholderName?: string, order: number, coordinates?: {lat: number, lng: number}}>) => {
   console.log('generateGoogleMapsDirectionsUrl called with:', locations)
   
   if (locations.length < 2) {
@@ -56,7 +64,9 @@ export const generateGoogleMapsDirectionsUrl = (locations: Array<{actualName?: s
   
   const waypoints = locations
     .sort((a, b) => a.order - b.order)
-    .map(loc => loc.actualName || loc.placeholderName || `Pub ${loc.order}`)
+    .map(loc => loc.coordinates 
+      ? `${loc.coordinates.lat},${loc.coordinates.lng}`
+      : loc.actualName || loc.placeholderName || `Pub ${loc.order}`)
     .join('/')
   
   const finalUrl = `https://www.google.com/maps/dir/${waypoints}`

@@ -15,6 +15,10 @@ interface PubLocation {
   mapsLink?: string
   walkingTime?: string
   areaDescription?: string
+  coordinates?: {
+    lat: number
+    lng: number
+  }
 }
 
 interface RouteMapProps {

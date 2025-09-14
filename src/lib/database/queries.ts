@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server-only'
-import { Game, GameTemplate, UserProfile } from '@/types'
+import { Game, UserProfile } from '@/types'
 
 export class DatabaseService {
   private async getSupabase() {
@@ -251,47 +251,6 @@ export class DatabaseService {
     return true
   }
 
-  // Game Template Operations
-  async getGameTemplates(theme?: string, difficulty?: string): Promise<GameTemplate[]> {
-    const supabase = await this.getSupabase()
-    let query = supabase
-      .from('game_templates')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (theme) {
-      query = query.eq('theme', theme)
-    }
-
-    if (difficulty) {
-      query = query.eq('difficulty', difficulty)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Error fetching game templates:', error)
-      return []
-    }
-
-    return data || []
-  }
-
-  async getGameTemplate(templateId: string): Promise<GameTemplate | null> {
-    const supabase = await this.getSupabase()
-    const { data, error } = await supabase
-      .from('game_templates')
-      .select('*')
-      .eq('id', templateId)
-      .single()
-
-    if (error) {
-      console.error('Error fetching game template:', error)
-      return null
-    }
-
-    return data
-  }
 
   // Search Operations
   async searchGames(userId: string, query: string): Promise<Game[]> {

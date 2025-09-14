@@ -13,9 +13,9 @@ const testLocationMapping = {
     mapsLink: 'https://maps.google.com/?q=The+Centurian'
   },
   '{PUB_2}': {
-    name: 'The Red Lion',
+    name: 'The Local Tavern',
     venueType: 'traditional-pub',
-    mapsLink: 'https://maps.google.com/?q=The+Red+Lion'
+    mapsLink: 'https://maps.google.com/?q=The+Local+Tavern'
   },
   '{CITY}': {
     name: 'Newcastle',
@@ -33,12 +33,12 @@ const testCases = [
   },
   {
     input: "The bartender at {PUB_1} mentions that someone was seen near {PUB_2}.",
-    expected: "The bartender at The Centurian mentions that someone was seen near The Red Lion.",
+    expected: "The bartender at The Centurian mentions that someone was seen near The Local Tavern.",
     description: "Multiple pub name replacements"
   },
   {
     input: "Visit {PUB_1} first, then head to {PUB_2} for the next clue.",
-    expected: "Visit The Centurian first, then head to The Red Lion for the next clue.",
+    expected: "Visit The Centurian first, then head to The Local Tavern for the next clue.",
     description: "Sequential pub name replacements"
   },
   {

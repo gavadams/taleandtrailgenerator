@@ -13,7 +13,7 @@ export function PlaceholderDemo() {
     "Your investigation begins at {PUB_1}, a pub nestled within Newcastle Central Station. The bartender mentions a coded message was seen near {PUB_2}. The next location may hold the key..."
   )
   const [pub1Name, setPub1Name] = useState('The Centurian')
-  const [pub2Name, setPub2Name] = useState('The Red Lion')
+  const [pub2Name, setPub2Name] = useState('The Local Tavern')
   const [result, setResult] = useState('')
 
   const handleReplace = () => {

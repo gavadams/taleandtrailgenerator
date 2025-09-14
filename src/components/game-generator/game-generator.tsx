@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Wand2 } from 'lucide-react'
 import { GameSetupStep } from './steps/game-setup-step'
-import { TemplateSelectionStep } from './steps/template-selection-step'
 import { CityAreaStep } from './steps/city-area-step'
 import { StoryGenerationStep } from './steps/story-generation-step'
 import { LocationSetupStep } from './steps/location-setup-step'
@@ -29,7 +28,6 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
     currentStep: 0,
     steps: [
       { id: 'setup', title: 'Game Setup', description: 'Choose theme, city, and settings', completed: false },
-      { id: 'template', title: 'Template Selection', description: 'Choose a template or create custom', completed: false },
       { id: 'area', title: 'City Area', description: 'Select specific area/neighborhood', completed: false },
       { id: 'story', title: 'Story Generation', description: 'Generate overarching narrative', completed: false },
       { id: 'locations', title: 'Location Setup', description: 'Configure pub locations', completed: false },
@@ -81,42 +79,21 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
     setGenerationState(prev => ({ ...prev, isLoading: true }))
 
     try {
-      // Check if using a template
-      const useTemplate = (generationState.gameData as any).useTemplate
-      const templateId = (generationState.gameData as any).templateId
-
-      let request: any
-      let apiEndpoint: string
-
-      if (useTemplate && templateId) {
-        // Template-based generation
-        request = {
-          templateId,
-          city: generationState.gameData.city!,
-          cityArea: (generationState.gameData as any).cityArea,
-          pubCount: generationState.gameData.pubCount!,
-          puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
-          estimatedDuration: generationState.gameData.estimatedDuration!,
-          provider: aiProvider,
-        }
-        apiEndpoint = '/api/generate-from-template'
-      } else {
-        // Custom generation
-        request = {
-          provider: aiProvider,
-          theme: generationState.gameData.theme!,
-          city: generationState.gameData.city!,
-          cityArea: (generationState.gameData as any).cityArea,
-          difficulty: generationState.gameData.difficulty!,
-          pubCount: generationState.gameData.pubCount!,
-          puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
-          estimatedDuration: generationState.gameData.estimatedDuration!,
-        }
-        apiEndpoint = '/api/generate-game'
+      // Direct AI generation with BarCrawl integration
+      const request = {
+        provider: aiProvider,
+        theme: generationState.gameData.theme!,
+        city: generationState.gameData.city!,
+        cityArea: (generationState.gameData as any).cityArea,
+        difficulty: generationState.gameData.difficulty!,
+        pubCount: generationState.gameData.pubCount!,
+        puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
+        estimatedDuration: generationState.gameData.estimatedDuration!,
+        customInstructions: (generationState.gameData as any).customInstructions,
       }
+      const apiEndpoint = '/api/generate-game'
       
       console.log('Frontend sending request:', request)
-      console.log('Using template:', useTemplate)
       console.log('API endpoint:', apiEndpoint)
 
       const response = await fetch(apiEndpoint, {
@@ -153,7 +130,8 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
             throw new Error('AI service is currently overloaded. Please try again in a few minutes, or switch to a different AI provider.')
           }
         } else if (errorData.error?.includes('parse AI response')) {
-          throw new Error('The AI generated content in an unexpected format. Please try again with different settings.')
+          console.error('AI response parsing error:', errorData.error)
+          throw new Error(`AI response format error: ${errorData.error}. Please try again.`)
         } else if (errorData.error?.includes('API key')) {
           throw new Error('AI service configuration issue. Please check your API keys.')
         } else {
@@ -284,11 +262,11 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         <Card>
           <CardContent className="py-6">
             <div className="space-y-4">
-              {/* Desktop/Tablet: 2 rows with Z-shaped snake pattern */}
+              {/* Desktop/Tablet: 2 rows centered */}
               <div className="hidden md:block">
                 <div className="relative">
                   {/* First row: steps 1-4 with horizontal connectors */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-center">
                     <div className="flex items-center space-x-3">
                       <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                         0 <= generationState.currentStep
@@ -312,7 +290,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                     </div>
                     
                     {/* Horizontal connector 1→2 */}
-                    <div className={`flex-1 h-0.5 mx-4 ${
+                    <div className={`h-0.5 w-16 mx-4 ${
                       0 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
                     }`} />
                     
@@ -339,7 +317,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                     </div>
                     
                     {/* Horizontal connector 2→3 */}
-                    <div className={`flex-1 h-0.5 mx-4 ${
+                    <div className={`h-0.5 w-16 mx-4 ${
                       1 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
                     }`} />
                     
@@ -366,7 +344,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                     </div>
                     
                     {/* Horizontal connector 3→4 */}
-                    <div className={`flex-1 h-0.5 mx-4 ${
+                    <div className={`h-0.5 w-16 mx-4 ${
                       2 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
                     }`} />
                     
@@ -393,17 +371,8 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                     </div>
                   </div>
                   
-                  {/* Vertical connector 4→5 */}
-                  <div className="flex justify-end mt-4">
-                    <div className={`w-0.5 h-8 ${
-                      3 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
-                    }`} />
-                  </div>
-                  
-                  {/* Second row: steps 5-7 (reversed) with horizontal connectors - aligned right */}
-                  <div className="flex items-center justify-end">
-                    {/* Empty space for right alignment */}
-                    <div className="flex-1"></div>
+                  {/* Second row: steps 5-6 with horizontal connectors - centered */}
+                  <div className="flex items-center justify-center mt-8">
                     
                     <div className="flex items-center space-x-3">
                       <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
@@ -428,7 +397,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                     </div>
                     
                     {/* Horizontal connector 5→6 */}
-                    <div className={`flex-1 h-0.5 mx-4 ${
+                    <div className={`h-0.5 w-16 mx-4 ${
                       4 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
                     }`} />
                     
@@ -451,33 +420,6 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                           {generationState.steps[5].title}
                         </div>
                         <div className="text-xs text-gray-500">{generationState.steps[5].description}</div>
-                      </div>
-                    </div>
-                    
-                    {/* Horizontal connector 6→7 */}
-                    <div className={`flex-1 h-0.5 mx-4 ${
-                      5 < generationState.currentStep ? 'bg-blue-600' : 'bg-gray-300'
-                    }`} />
-                    
-                    <div className="flex items-center space-x-3">
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                        6 <= generationState.currentStep
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'border-gray-300 text-gray-400'
-                      }`}>
-                        {6 < generationState.currentStep ? (
-                          <span className="text-sm">✓</span>
-                        ) : (
-                          <span className="text-sm font-medium">7</span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className={`text-sm font-medium ${
-                          6 <= generationState.currentStep ? 'text-gray-900' : 'text-gray-500'
-                        }`}>
-                          {generationState.steps[6].title}
-                        </div>
-                        <div className="text-xs text-gray-500">{generationState.steps[6].description}</div>
                       </div>
                     </div>
                   </div>
@@ -615,12 +557,6 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
                     <span className="text-sm bg-pink-100 text-pink-800 px-2 py-1 rounded">{generationState.gameData.puzzlesPerPub}</span>
                   </div>
                 )}
-                {generationState.steps.find(s => s.id === 'template')?.data?.template && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-600">Template:</span>
-                    <span className="text-sm bg-indigo-100 text-indigo-800 px-2 py-1 rounded">{generationState.steps.find(s => s.id === 'template')?.data?.template?.name}</span>
-                  </div>
-                )}
                 {generationState.steps.find(s => s.id === 'area')?.data?.cityArea && (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-medium text-gray-600">Area:</span>
@@ -694,19 +630,13 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
           )}
 
           {generationState.currentStep === 1 && (
-            <TemplateSelectionStep
-              onComplete={(data) => handleStepComplete('template', data)}
-            />
-          )}
-
-          {generationState.currentStep === 2 && (
             <CityAreaStep
               initialData={generationState.gameData}
               onComplete={(data) => handleStepComplete('area', data)}
             />
           )}
 
-          {generationState.currentStep === 3 && (
+          {generationState.currentStep === 2 && (
             <StoryGenerationStep
               gameData={generationState.gameData}
               onComplete={(data) => handleStepComplete('story', data)}
@@ -715,21 +645,21 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
             />
           )}
 
-          {generationState.currentStep === 4 && (
+          {generationState.currentStep === 3 && (
             <LocationSetupStep
               gameData={generationState.gameData}
               onComplete={(data) => handleStepComplete('locations', data)}
             />
           )}
 
-          {generationState.currentStep === 5 && (
+          {generationState.currentStep === 4 && (
             <PuzzleGenerationStep
               gameData={generationState.gameData}
               onComplete={(data) => handleStepComplete('puzzles', data)}
             />
           )}
 
-          {generationState.currentStep === 6 && (
+          {generationState.currentStep === 5 && (
             <ReviewStep
               gameData={generationState.gameData}
               onSave={handleSaveGame}
