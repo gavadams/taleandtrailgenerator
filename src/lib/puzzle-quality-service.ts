@@ -1,4 +1,4 @@
-import { Puzzle, PuzzleType, PuzzleMechanic, PuzzleCategory } from '@/types'
+import { Puzzle, PuzzleType, PuzzleMechanic } from '@/types'
 
 export interface PuzzleQualityMetrics {
   contentCompleteness: number // 0-10
@@ -364,7 +364,7 @@ export class PuzzleQualityService {
       case 'multi-step':
         return puzzle.content.includes('Step') || (puzzle.content.includes('first') && puzzle.content.includes('then'))
       case 'progressive':
-        return puzzle.dependencies && puzzle.dependencies.length > 0
+        return !!(puzzle.dependencies && puzzle.dependencies.length > 0)
       case 'collaborative':
         return puzzle.requiresTeamwork || puzzle.content.includes('team') || puzzle.content.includes('together')
       case 'time-sensitive':
@@ -402,7 +402,7 @@ export class PuzzleQualityService {
     return puzzle.content.includes('solve') || 
            puzzle.content.includes('find') || 
            puzzle.content.includes('determine') ||
-           puzzle.instructions && puzzle.instructions.length > 10
+           !!(puzzle.instructions && puzzle.instructions.length > 10)
   }
 
   private static hasAmbiguousContent(content: string): boolean {

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Theme, Difficulty, PuzzleType, PuzzleMechanic, PuzzleCategory } from '@/types'
+import { Theme, Difficulty, PuzzleType, PuzzleMechanic } from '@/types'
 import { Settings, MapPin, Puzzle, Clock } from 'lucide-react'
 
 interface GameSetupStepProps {

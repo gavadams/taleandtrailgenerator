@@ -1,4 +1,4 @@
-interface BarCrawlPub {
+export interface BarCrawlPub {
   name: string;
   address: string;
   area: string;
@@ -10,7 +10,7 @@ interface BarCrawlPub {
   };
 }
 
-interface BarCrawlResponse {
+export interface BarCrawlResponse {
   pubs: BarCrawlPub[];
   totalPubs: number;
   area: string;
