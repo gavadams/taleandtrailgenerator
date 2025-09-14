@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Puzzle, Lightbulb, Plus, Trash2 } from 'lucide-react'
-import { PuzzleType } from '@/types'
+import { PuzzleType, PuzzleMechanic, PuzzleCategory } from '@/types'
 
 interface PuzzleGenerationStepProps {
   gameData: any
@@ -26,15 +26,34 @@ export function PuzzleGenerationStep({ gameData, onComplete }: PuzzleGenerationS
     return []
   })
 
-  const puzzleTypes: { value: PuzzleType; label: string; description: string }[] = [
-    { value: 'logic', label: 'Logic Puzzle', description: 'Complex reasoning, syllogisms, conditional statements' },
-    { value: 'observation', label: 'Observation', description: 'Environmental storytelling, visual pattern recognition' },
-    { value: 'cipher', label: 'Cipher/Code', description: 'Multi-layer encryption, historical ciphers, substitution codes' },
-    { value: 'deduction', label: 'Deduction', description: 'Evidence correlation, timeline reconstruction, alibi verification' },
-    { value: 'local', label: 'Local Knowledge', description: 'Historical events, architectural details, cultural references' },
-    { value: 'wordplay', label: 'Wordplay', description: 'Sophisticated anagrams, cryptic clues, linguistic patterns' },
-    { value: 'math', label: 'Mathematical', description: 'Geometric patterns, statistical analysis, algorithmic thinking' },
-    { value: 'pattern', label: 'Pattern Recognition', description: 'Complex sequences, fractal patterns, recursive logic' },
+  const puzzleTypes: { value: PuzzleType; label: string; description: string; category: string }[] = [
+    { value: 'logic', label: 'Logic Puzzle', description: 'Complex reasoning, syllogisms, conditional statements', category: 'Reasoning' },
+    { value: 'observation', label: 'Observation', description: 'Environmental storytelling, visual pattern recognition', category: 'Analytical' },
+    { value: 'cipher', label: 'Cipher/Code', description: 'Multi-layer encryption, historical ciphers, substitution codes', category: 'Contextual' },
+    { value: 'deduction', label: 'Deduction', description: 'Evidence correlation, timeline reconstruction, alibi verification', category: 'Reasoning' },
+    { value: 'local', label: 'Local Knowledge', description: 'Historical events, architectural details, cultural references', category: 'Contextual' },
+    { value: 'wordplay', label: 'Wordplay', description: 'Sophisticated anagrams, cryptic clues, linguistic patterns', category: 'Creative' },
+    { value: 'math', label: 'Mathematical', description: 'Geometric patterns, statistical analysis, algorithmic thinking', category: 'Analytical' },
+    { value: 'pattern', label: 'Pattern Recognition', description: 'Complex sequences, fractal patterns, recursive logic', category: 'Analytical' },
+    { value: 'physical', label: 'Physical', description: 'Hands-on puzzles requiring manipulation and assembly', category: 'Physical' },
+    { value: 'social', label: 'Social', description: 'Interaction with people, interviews, collaborative problem-solving', category: 'Social' },
+    { value: 'memory', label: 'Memory', description: 'Recall, sequence memorization, information retention', category: 'Analytical' },
+    { value: 'creative', label: 'Creative', description: 'Artistic expression, storytelling, creative problem-solving', category: 'Creative' },
+    { value: 'technology', label: 'Technology', description: 'Modern technology, QR codes, apps, digital elements', category: 'Technological' },
+    { value: 'meta-puzzle', label: 'Meta-Puzzle', description: 'Understanding overall game structure, connecting solutions', category: 'Reasoning' },
+  ]
+
+  const puzzleMechanics: { value: PuzzleMechanic; label: string; description: string }[] = [
+    { value: 'multi-step', label: 'Multi-Step', description: 'Requires solving multiple sub-puzzles' },
+    { value: 'progressive', label: 'Progressive', description: 'Builds on previous solutions' },
+    { value: 'collaborative', label: 'Collaborative', description: 'Requires team coordination' },
+    { value: 'time-sensitive', label: 'Time-Sensitive', description: 'Has countdown or time pressure' },
+    { value: 'environmental', label: 'Environmental', description: 'Uses pub\'s actual features' },
+    { value: 'cross-reference', label: 'Cross-Reference', description: 'Connects information from multiple locations' },
+    { value: 'hybrid', label: 'Hybrid', description: 'Combines multiple puzzle types' },
+    { value: 'meta-puzzle', label: 'Meta-Puzzle', description: 'Requires understanding overall game structure' },
+    { value: 'red-herring', label: 'Red Herring', description: 'Misleads but provides valuable information' },
+    { value: 'progressive-difficulty', label: 'Progressive Difficulty', description: 'Starts easy but becomes more complex' },
   ]
 
   const addPuzzle = (locationIndex: number) => {
@@ -43,11 +62,20 @@ export function PuzzleGenerationStep({ gameData, onComplete }: PuzzleGenerationS
       title: '',
       narrative: '',
       type: 'logic' as PuzzleType,
+      category: 'reasoning' as PuzzleCategory,
+      mechanics: [] as PuzzleMechanic[],
       content: '',
       answer: '',
       clues: [''],
       difficulty: 3,
       order: locations[locationIndex].puzzles.length + 1,
+      localContext: '',
+      materials: [],
+      instructions: '',
+      requiresTeamwork: false,
+      requiresPhysicalInteraction: false,
+      requiresLocalKnowledge: false,
+      isMultiStep: false,
     }
 
     setLocations((prev: any[]) => prev.map((loc: any, index: number) => 
@@ -221,6 +249,49 @@ export function PuzzleGenerationStep({ gameData, onComplete }: PuzzleGenerationS
                                 </SelectContent>
                               </Select>
                             </div>
+                            <div className="space-y-2">
+                              <Label>Puzzle Category</Label>
+                              <Select
+                                value={puzzle.category || 'reasoning'}
+                                onValueChange={(value) => updatePuzzle(locationIndex, puzzleIndex, 'category', value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="reasoning">Reasoning</SelectItem>
+                                  <SelectItem value="creative">Creative</SelectItem>
+                                  <SelectItem value="analytical">Analytical</SelectItem>
+                                  <SelectItem value="contextual">Contextual</SelectItem>
+                                  <SelectItem value="physical">Physical</SelectItem>
+                                  <SelectItem value="social">Social</SelectItem>
+                                  <SelectItem value="technological">Technological</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Puzzle Mechanics</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {puzzleMechanics.map((mechanic) => (
+                                <label key={mechanic.value} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={puzzle.mechanics?.includes(mechanic.value) || false}
+                                    onChange={(e) => {
+                                      const currentMechanics = puzzle.mechanics || []
+                                      const newMechanics = e.target.checked
+                                        ? [...currentMechanics, mechanic.value]
+                                        : currentMechanics.filter((m: PuzzleMechanic) => m !== mechanic.value)
+                                      updatePuzzle(locationIndex, puzzleIndex, 'mechanics', newMechanics)
+                                    }}
+                                    className="rounded"
+                                  />
+                                  <span className="text-sm">{mechanic.label}</span>
+                                </label>
+                              ))}
+                            </div>
                           </div>
 
                           <div className="space-y-2">
@@ -308,6 +379,74 @@ export function PuzzleGenerationStep({ gameData, onComplete }: PuzzleGenerationS
                                 ))}
                               </SelectContent>
                             </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Local Context</Label>
+                            <Textarea
+                              placeholder="How this puzzle relates to the pub/city specifically..."
+                              value={puzzle.localContext || ''}
+                              onChange={(e) => updatePuzzle(locationIndex, puzzleIndex, 'localContext', e.target.value)}
+                              rows={2}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Materials/Props</Label>
+                            <Input
+                              placeholder="e.g., Lock pieces, QR code, Historical documents"
+                              value={puzzle.materials?.join(', ') || ''}
+                              onChange={(e) => updatePuzzle(locationIndex, puzzleIndex, 'materials', e.target.value.split(',').map(m => m.trim()).filter(m => m))}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Special Instructions</Label>
+                            <Textarea
+                              placeholder="Any special instructions for this puzzle..."
+                              value={puzzle.instructions || ''}
+                              onChange={(e) => updatePuzzle(locationIndex, puzzleIndex, 'instructions', e.target.value)}
+                              rows={2}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={puzzle.requiresTeamwork || false}
+                                onChange={(e) => updatePuzzle(locationIndex, puzzleIndex, 'requiresTeamwork', e.target.checked)}
+                                className="rounded"
+                              />
+                              <span className="text-sm">Requires Teamwork</span>
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={puzzle.requiresPhysicalInteraction || false}
+                                onChange={(e) => updatePuzzle(locationIndex, puzzleIndex, 'requiresPhysicalInteraction', e.target.checked)}
+                                className="rounded"
+                              />
+                              <span className="text-sm">Physical Interaction</span>
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={puzzle.requiresLocalKnowledge || false}
+                                onChange={(e) => updatePuzzle(locationIndex, puzzleIndex, 'requiresLocalKnowledge', e.target.checked)}
+                                className="rounded"
+                              />
+                              <span className="text-sm">Local Knowledge</span>
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={puzzle.isMultiStep || false}
+                                onChange={(e) => updatePuzzle(locationIndex, puzzleIndex, 'isMultiStep', e.target.checked)}
+                                className="rounded"
+                              />
+                              <span className="text-sm">Multi-Step</span>
+                            </label>
                           </div>
                         </CardContent>
                       </Card>

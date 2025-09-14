@@ -197,9 +197,9 @@ export class AIService {
         throw new Error('Google AI service is currently overloaded. Please try again in a few minutes, or switch to a different AI provider.')
       }
       
-      // If it's a parsing error, try once more with a much simpler prompt
-      if (error.message.includes('parse AI response') || error.message.includes('format error') || error.message.includes('structure error')) {
-        console.log('Retrying with much simpler prompt...')
+      // If it's a parsing error or simplified prompt is requested, use a much simpler prompt
+      if (error.message.includes('parse AI response') || error.message.includes('format error') || error.message.includes('structure error') || (request as any).simplifiedPrompt) {
+        console.log('Using simplified prompt...')
         try {
           const simplifiedPrompt = `Create a pub crawl mystery game for ${request.city}${request.cityArea ? ` in ${request.cityArea}` : ''}. 
 
@@ -275,6 +275,14 @@ Return ONLY this JSON format (no other text):
     return `
 🚨 CRITICAL: You MUST return ONLY valid JSON. No explanations, no markdown, no code blocks. Just pure JSON.
 
+🚨 JSON FORMAT REQUIREMENTS 🚨:
+- Start your response with { and end with }
+- Use double quotes for all strings and keys
+- No trailing commas
+- No comments or explanations
+- No markdown formatting
+- No text before or after the JSON
+
 Generate a complete pub crawl mystery game with the following specifications:
 
 Theme: ${request.theme}
@@ -285,6 +293,9 @@ Number of pubs: ${request.pubCount} (EXACTLY ${request.pubCount} PUBS - NO MORE,
 Puzzles per pub: ${request.puzzlesPerPub} (EXACTLY ${request.puzzlesPerPub} PUZZLES PER PUB - NO MORE, NO LESS)
 Total puzzles: ${request.pubCount * request.puzzlesPerPub} (EXACTLY ${request.pubCount * request.puzzlesPerPub} TOTAL PUZZLES)
 Estimated duration: ${request.estimatedDuration} minutes
+
+🚨 CRITICAL STORY INTEGRATION REQUIREMENT 🚨:
+This is NOT just a collection of random puzzles - this is a cohesive mystery investigation where each puzzle advances the storyline and reveals crucial plot information. Every puzzle must feel like a natural, essential part of the investigation that players are emotionally invested in solving. Follow the narrative integration examples provided to ensure puzzles drive the story forward and provide meaningful breakthroughs in the case.
 
 ${barCrawlData ? `🎯 REAL PUB DATA PROVIDED FROM BARCRAWL:
 Use these EXACT pub names, locations, and coordinates from BarCrawl:
@@ -333,6 +344,37 @@ FAILURE TO RESEARCH AREA-SPECIFIC PUBS WILL RESULT IN REJECTION.` : ''}
 
 CRITICAL STORY & PUZZLE REQUIREMENTS:
 
+${request.preferredPuzzleTypes && request.preferredPuzzleTypes.length > 0 ? `🎯 PUZZLE TYPE PREFERENCES:
+The user has specifically requested these puzzle types (use these as primary focus):
+${request.preferredPuzzleTypes.map((type: string) => `- ${type}`).join('\n')}
+
+IMPORTANT: Prioritize these puzzle types while still maintaining variety.` : ''}
+
+${request.preferredMechanics && request.preferredMechanics.length > 0 ? `🎯 PUZZLE MECHANICS PREFERENCES:
+The user has specifically requested these mechanics (use these as primary focus):
+${request.preferredMechanics.map((mechanic: string) => `- ${mechanic}`).join('\n')}
+
+IMPORTANT: Prioritize these mechanics while still maintaining variety.` : ''}
+
+${request.difficultyRange ? `🎯 DIFFICULTY RANGE PREFERENCES:
+The user has requested puzzles between difficulty levels ${request.difficultyRange[0]} and ${request.difficultyRange[1]}.
+Ensure all puzzles fall within this range.` : ''}
+
+${request.includePhysicalPuzzles ? `🎯 PHYSICAL PUZZLES REQUIRED:
+The user specifically wants physical puzzles that require hands-on manipulation, movement, or interaction with physical objects.` : ''}
+
+${request.includeSocialPuzzles ? `🎯 SOCIAL PUZZLES REQUIRED:
+The user specifically wants social puzzles that require interaction with people, interviews, or social deduction.` : ''}
+
+${request.includeTechnologyPuzzles ? `🎯 TECHNOLOGY PUZZLES REQUIRED:
+The user specifically wants technology-based puzzles using modern devices, QR codes, or digital elements.` : ''}
+
+${request.requireTeamwork ? `🎯 TEAMWORK REQUIRED:
+The user specifically wants puzzles that require team coordination and collaboration.` : ''}
+
+${request.requireLocalKnowledge ? `🎯 LOCAL KNOWLEDGE REQUIRED:
+The user specifically wants puzzles that require knowledge of the local area, history, or culture.` : ''}
+
 STORY EXCELLENCE:
 1. Create a COMPELLING MYSTERY with clear stakes, motivation, and emotional investment
 2. Develop MEMORABLE CHARACTERS with distinct personalities, motivations, and backstories
@@ -375,7 +417,7 @@ WALKING ROUTE REQUIREMENTS:
 22. NATURAL FLOW: Make the route feel natural and enjoyable to walk, following established patterns
 23. ${!request.cityArea ? 'When no specific area is defined, use your knowledge of the most popular and well-documented pub crawl routes in the city.' : ''}
 
-ADVANCED PUZZLE TYPES TO USE (MUST USE VARIETY - NO MORE THAN 30% OF ANY SINGLE TYPE):
+ADVANCED PUZZLE TYPES TO USE (MUST USE VARIETY - NO MORE THAN 25% OF ANY SINGLE TYPE):
 - logic: Complex logical reasoning, syllogisms, conditional statements, logical sequences, truth tables, logical fallacies
 - observation: Environmental storytelling, hidden details, visual pattern recognition, spatial reasoning, architectural analysis
 - cipher: Multi-layer encryption, historical ciphers, substitution codes, frequency analysis, steganography, code-breaking
@@ -384,12 +426,20 @@ ADVANCED PUZZLE TYPES TO USE (MUST USE VARIETY - NO MORE THAN 30% OF ANY SINGLE 
 - wordplay: Sophisticated anagrams, cryptic clues, linguistic patterns, etymology puzzles, palindromes, acrostics
 - math: Mathematical reasoning, geometric patterns, statistical analysis, algorithmic thinking, probability, sequences
 - pattern: Complex sequence recognition, fractal patterns, recursive logic, system analysis, tessellations, fractals
+- physical: Hands-on puzzles requiring manipulation, assembly, construction, or physical interaction with objects
+- social: Puzzles requiring interaction with people, interviews, role-playing, or collaborative problem-solving
+- memory: Puzzles testing recall, sequence memorization, or information retention skills
+- creative: Puzzles requiring artistic expression, storytelling, or creative problem-solving approaches
+- technology: Puzzles involving modern technology, QR codes, apps, or digital elements
+- meta-puzzle: Puzzles that require understanding of the overall game structure and connecting multiple solutions
 
 PUZZLE DISTRIBUTION REQUIREMENTS:
-- Each game MUST use at least 5 different puzzle types
-- No single puzzle type should exceed 30% of total puzzles
-- Include at least one puzzle from each category: reasoning (logic/deduction), creative (wordplay/pattern), analytical (math/observation), contextual (local/cipher)
+- Each game MUST use at least 6 different puzzle types
+- No single puzzle type should exceed 25% of total puzzles
+- Include at least one puzzle from each category: reasoning (logic/deduction), creative (wordplay/pattern), analytical (math/observation), contextual (local/cipher), physical, social, technological
 - Vary difficulty within each type - don't make all puzzles of the same type the same difficulty
+- Include at least one multi-step puzzle and one hybrid puzzle
+- Ensure puzzles build on each other and reveal story elements progressively
 
 ADVANCED PUZZLE MECHANICS TO IMPLEMENT:
 - Multi-step puzzles that require solving multiple sub-puzzles
@@ -474,6 +524,25 @@ STORY EXCELLENCE EXAMPLES:
 - Red herrings that mislead but don't frustrate players
 - Satisfying resolutions that tie all loose ends together
 
+NARRATIVE INTEGRATION EXAMPLES:
+- Puzzle 1: "The Shipping Ledger" - Reveals which dock is involved in smuggling, advancing the investigation
+- Puzzle 2: "Witness Statements" - Identifies the truthful witness, providing crucial timeline information
+- Puzzle 3: "Dock Schedule" - Narrows down to specific shift crew, finding the eyewitness
+- Puzzle 4: "Route Map" - Determines where the smuggler drinks, leading to next location
+- Puzzle 5: "Witness Interviews" - Eliminates liars to find who knows the next lead
+- Puzzle 6: "Ciphered Messages" - Decodes location of the safehouse
+- Puzzle 7: "Final Riddle" - Identifies the ringleader and accomplice, solving the case
+
+STORY PROGRESSION REQUIREMENTS:
+- Each puzzle must feel like a natural next step in the investigation
+- Puzzle solutions should provide concrete information that advances the plot
+- Include narrative context that explains the puzzle's importance to the case
+- Puzzles should reveal character motivations and story elements
+- Each puzzle should feel like a breakthrough moment in the mystery
+- Include story elements that make players emotionally invested in solving each puzzle
+- Puzzles should build tension and suspense as the investigation unfolds
+- Each puzzle should provide evidence that leads logically to the next location
+
 REAL PUB CRAWL ROUTE EXAMPLES TO RESEARCH:
 - Popular routes from travel blogs (Time Out, Lonely Planet, local tourism sites)
 - Established pub crawl companies and their documented routes
@@ -501,13 +570,40 @@ REAL PUB CRAWL ROUTE EXAMPLES TO RESEARCH:
 - Puzzles must be specific to the pub location and story context
 - Include actual data, numbers, text, or materials that players can work with
 
+🚨 ENHANCED PUZZLE QUALITY REQUIREMENTS 🚨:
+- Each puzzle MUST include a "category" field (reasoning, creative, analytical, contextual, physical, social, technological)
+- Each puzzle MUST include a "mechanics" array with at least one advanced mechanic
+- Each puzzle MUST include a "localContext" field explaining how it relates to the pub/city
+- Each puzzle MUST include "materials" array if props are needed
+- Each puzzle MUST include "instructions" field for special requirements
+- Each puzzle MUST include quality flags: requiresTeamwork, requiresPhysicalInteraction, requiresLocalKnowledge, isMultiStep
+- Puzzles must have a quality score of 8.0+ (comprehensive, creative, solvable, locally relevant)
+- Include environmental integration - use actual pub features, local history, or area characteristics
+- Ensure progressive difficulty - early puzzles easier, later puzzles more complex
+- Include at least one collaborative puzzle requiring team coordination
+- Include at least one environmental puzzle using the pub's actual features
+
+🚨 CRITICAL NARRATIVE INTEGRATION REQUIREMENTS 🚨:
+- Each puzzle MUST advance the main storyline and reveal crucial plot information
+- Puzzles must feel like natural parts of the investigation, not random challenges
+- Each puzzle should provide evidence, clues, or information that leads to the next location
+- Puzzle solutions should unlock story progression and character development
+- Include narrative context that explains WHY this puzzle exists in the story
+- Puzzles should reveal character motivations, plot twists, or story revelations
+- Each puzzle should feel like a genuine part of the mystery investigation
+- Include story elements that make players care about solving each puzzle
+- Puzzles should build tension and suspense as the mystery unfolds
+- Each puzzle should feel like a breakthrough moment in the investigation
+
 PUZZLE CONTENT EXAMPLES BY TYPE:
 
 LOGIC PUZZLE EXAMPLE:
 {
   "title": "The Bartender's Alibi",
-  "narrative": "The bartender claims he was cleaning glasses when the incident occurred. Three witnesses give conflicting statements about what they saw.",
+  "narrative": "The bartender claims he was cleaning glasses when the incident occurred. Three witnesses give conflicting statements about what they saw. This puzzle is crucial - if we can identify the truthful witness, we'll know who to trust for the next lead in our investigation.",
   "type": "logic",
+  "category": "reasoning",
+  "mechanics": ["progressive", "cross-reference"],
   "content": "Witness A: 'I saw the bartender cleaning glasses at 8:30 PM, but he was using a red cloth, not blue.' Witness B: 'The bartender was definitely cleaning glasses at 8:30 PM with a blue cloth, and he was humming a tune.' Witness C: 'I didn't see the bartender cleaning glasses at 8:30 PM, but I heard humming from behind the bar.' The pub's security log shows: '8:30 PM - Bartender on duty, cleaning supplies: 1 red cloth, 1 blue cloth, 1 yellow cloth.' If only one witness is telling the complete truth, who is it?",
   "answer": "Witness B",
   "clues": [
@@ -517,7 +613,13 @@ LOGIC PUZZLE EXAMPLE:
   ],
   "difficulty": 3,
   "order": 1,
-  "localContext": "This puzzle uses the pub's actual cleaning supplies and witness testimony to determine credibility."
+  "localContext": "This puzzle uses the pub's actual cleaning supplies and witness testimony to determine credibility. Solving this reveals which witness can be trusted for crucial information about the suspect's movements.",
+  "materials": ["Security log printout", "Witness statements"],
+  "instructions": "Read all statements carefully and cross-reference with the security log evidence.",
+  "requiresTeamwork": false,
+  "requiresPhysicalInteraction": false,
+  "requiresLocalKnowledge": false,
+  "isMultiStep": false
 }
 
 CIPHER PUZZLE EXAMPLE:
@@ -639,6 +741,78 @@ PATTERN PUZZLE EXAMPLE:
   "localContext": "This puzzle uses the pub's actual motto and a mathematical sequence to reveal hidden information."
 }
 
+PHYSICAL PUZZLE EXAMPLE:
+{
+  "title": "The Broken Lock",
+  "narrative": "A broken lock was found in the pub's storage room. The pieces need to be reassembled to reveal a combination.",
+  "type": "physical",
+  "category": "physical",
+  "mechanics": ["environmental", "collaborative"],
+  "content": "The lock has 5 pieces scattered around the storage room. Each piece has a number engraved on it. Assemble the pieces in the correct order to form a 3-digit combination. The combination opens the safe containing the next clue.",
+  "answer": "247",
+  "clues": [
+    "Look for pieces with numbers that form a logical sequence.",
+    "Consider the physical shape of each piece - they should fit together like a puzzle.",
+    "The combination might relate to important dates in the pub's history."
+  ],
+  "difficulty": 3,
+  "order": 9,
+  "localContext": "This puzzle uses the pub's actual storage room and safe to create a physical challenge.",
+  "materials": ["Lock pieces", "Safe", "Assembly instructions"],
+  "instructions": "Physically assemble the lock pieces to reveal the combination.",
+  "requiresPhysicalInteraction": true,
+  "requiresTeamwork": true,
+  "isMultiStep": false
+}
+
+SOCIAL PUZZLE EXAMPLE:
+{
+  "title": "The Witness Interview",
+  "narrative": "A regular customer claims to have seen something important. You need to ask the right questions to get the truth.",
+  "type": "social",
+  "category": "social",
+  "mechanics": ["collaborative", "progressive"],
+  "content": "Interview the witness using these questions: 'What time did you arrive?', 'Who else was here?', 'What did you see?' The witness will only answer truthfully if you ask the questions in the correct order and use the right approach. What is the correct sequence of questions?",
+  "answer": "Arrival time first, then who was here, then what they saw",
+  "clues": [
+    "Consider what information you need most urgently first.",
+    "Build rapport before asking sensitive questions.",
+    "The witness responds better to open-ended questions than yes/no questions."
+  ],
+  "difficulty": 3,
+  "order": 10,
+  "localContext": "This puzzle involves interacting with actual pub staff or regular customers.",
+  "materials": ["Interview questions list", "Witness character card"],
+  "instructions": "Conduct a structured interview to gather information from the witness.",
+  "requiresTeamwork": true,
+  "requiresPhysicalInteraction": false,
+  "isMultiStep": false
+}
+
+TECHNOLOGY PUZZLE EXAMPLE:
+{
+  "title": "The QR Code Mystery",
+  "narrative": "A QR code was found hidden in the pub's Wi-Fi network name. Scanning it reveals a website with the next clue.",
+  "type": "technology",
+  "category": "technological",
+  "mechanics": ["multi-step", "progressive"],
+  "content": "The pub's Wi-Fi network is named 'MysteryPub_2024'. Use this information to generate a QR code. Scan the QR code to access a website. The website contains a puzzle that must be solved to get the next clue.",
+  "answer": "The website reveals the next pub location",
+  "clues": [
+    "Use a QR code generator to create a code from the Wi-Fi name.",
+    "Scan the generated QR code to access the hidden website.",
+    "Solve the puzzle on the website to reveal the next clue."
+  ],
+  "difficulty": 4,
+  "order": 11,
+  "localContext": "This puzzle uses the pub's actual Wi-Fi network and modern technology.",
+  "materials": ["QR code generator", "Smartphone", "Website access"],
+  "instructions": "Use technology to decode the hidden message and solve the online puzzle.",
+  "requiresTeamwork": false,
+  "requiresPhysicalInteraction": false,
+  "isMultiStep": true
+}
+
 🚨 FINAL PUZZLE VALIDATION CHECKLIST 🚨:
 Before finalizing your response, verify each puzzle has:
 ✓ Complete, solvable content with specific data/numbers/text
@@ -648,6 +822,21 @@ Before finalizing your response, verify each puzzle has:
 ✓ Appropriate difficulty level for the puzzle type
 ✓ No placeholder text or incomplete information
 ✓ Immediate playability without additional setup
+✓ Category field (reasoning, creative, analytical, contextual, physical, social, technological)
+✓ Mechanics array with at least one advanced mechanic
+✓ LocalContext field explaining pub/city relevance
+✓ Materials array if props are needed
+✓ Instructions field for special requirements
+✓ Quality flags (requiresTeamwork, requiresPhysicalInteraction, requiresLocalKnowledge, isMultiStep)
+✓ Quality score of 8.0+ (comprehensive, creative, solvable, locally relevant)
+✓ Environmental integration using actual pub features
+✓ Progressive difficulty appropriate for puzzle order
+✓ NARRATIVE INTEGRATION: Puzzle advances the main storyline and reveals crucial plot information
+✓ STORY CONTEXT: Narrative explains WHY this puzzle exists and its importance to the case
+✓ PLOT PROGRESSION: Puzzle solution provides evidence that leads to the next location
+✓ CHARACTER DEVELOPMENT: Puzzle reveals character motivations or story elements
+✓ EMOTIONAL STAKES: Puzzle makes players care about solving it for story reasons
+✓ INVESTIGATION FLOW: Puzzle feels like a natural next step in the mystery investigation
 
 🚨🚨🚨 CRITICAL JSON FORMAT REQUIREMENT 🚨🚨🚨
 You MUST respond with ONLY valid JSON. Do NOT include:
@@ -657,6 +846,57 @@ You MUST respond with ONLY valid JSON. Do NOT include:
 - Any additional formatting
 
 Start your response with { and end with }. That's it.
+
+🚨 REQUIRED JSON STRUCTURE TEMPLATE 🚨:
+{
+  "story": {
+    "title": "Your Game Title",
+    "intro": {
+      "title": "Welcome Title",
+      "content": "Introduction story and setup",
+      "mapsLink": "Google Maps link to first pub"
+    },
+    "resolution": {
+      "title": "Resolution Title", 
+      "content": "Final resolution and congratulations"
+    },
+    "characterTypes": ["detective", "witness", "suspect"]
+  },
+  "locations": [
+    {
+      "order": 1,
+      "placeholderName": "{PUB_1}",
+      "actualName": "Real Pub Name",
+      "venueType": "traditional-pub",
+      "narrative": "Story context for this pub",
+      "transitionText": "Text leading to next pub",
+      "mapsLink": "Google Maps link",
+      "walkingTime": "5-10 minutes",
+      "areaDescription": "Description of the area"
+    }
+  ],
+  "puzzles": [
+    {
+      "title": "Puzzle Title",
+      "narrative": "Story context for this puzzle",
+      "type": "logic",
+      "category": "reasoning",
+      "mechanics": ["progressive"],
+      "content": "The actual puzzle content",
+      "answer": "The correct answer",
+      "clues": ["Clue 1", "Clue 2", "Clue 3"],
+      "difficulty": 3,
+      "order": 1,
+      "localContext": "How this relates to the pub/city",
+      "materials": ["Material 1", "Material 2"],
+      "instructions": "Special instructions",
+      "requiresTeamwork": false,
+      "requiresPhysicalInteraction": false,
+      "requiresLocalKnowledge": false,
+      "isMultiStep": false
+    }
+  ]
+}
 
 Return ONLY the JSON object in the following format:
 

@@ -69,8 +69,43 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
       currentStep: Math.max(prev.currentStep - 1, 0)
     }))
     
+    // Clear current step form data
+    setCurrentStepFormData(null)
+    
     // Scroll to top when going back to previous step
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleStepNext = () => {
+    // Save current step data before moving to next step
+    const currentStepData = getCurrentStepData()
+    if (currentStepData) {
+      handleStepComplete(getCurrentStepId(), currentStepData)
+    } else {
+      // If no data to save, just move to next step
+      setGenerationState(prev => ({
+        ...prev,
+        currentStep: Math.min(prev.currentStep + 1, prev.steps.length - 1)
+      }))
+    }
+    
+    // Clear current step form data
+    setCurrentStepFormData(null)
+    
+    // Scroll to top when moving to next step
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const getCurrentStepId = () => {
+    const stepMap = ['setup', 'area', 'story', 'locations', 'puzzles', 'review']
+    return stepMap[generationState.currentStep] || 'unknown'
+  }
+
+  const [currentStepFormData, setCurrentStepFormData] = useState<any>(null)
+
+  const getCurrentStepData = () => {
+    // Return the current step's form data if available, otherwise fall back to gameData
+    return currentStepFormData || generationState.gameData
   }
 
   const handleGenerateContent = async (retryCount = 0) => {
@@ -90,6 +125,16 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
         estimatedDuration: generationState.gameData.estimatedDuration!,
         customInstructions: (generationState.gameData as any).customInstructions,
+        simplifiedPrompt: retryCount > 0, // Use simplified prompt for retries
+        // Puzzle preferences
+        preferredPuzzleTypes: (generationState.gameData as any).preferredPuzzleTypes,
+        preferredMechanics: (generationState.gameData as any).preferredMechanics,
+        difficultyRange: (generationState.gameData as any).difficultyRange,
+        includePhysicalPuzzles: (generationState.gameData as any).includePhysicalPuzzles,
+        includeSocialPuzzles: (generationState.gameData as any).includeSocialPuzzles,
+        includeTechnologyPuzzles: (generationState.gameData as any).includeTechnologyPuzzles,
+        requireTeamwork: (generationState.gameData as any).requireTeamwork,
+        requireLocalKnowledge: (generationState.gameData as any).requireLocalKnowledge,
       }
       const apiEndpoint = '/api/generate-game'
       
@@ -112,8 +157,10 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         // Handle specific error types with retry logic
         if (response.status === 503 || errorData.error?.includes('overloaded') || errorData.error?.includes('Service Unavailable')) {
           if (retryCount < 3) {
-            console.log(`Google AI service overloaded, retrying in ${(retryCount + 1) * 2} seconds... (attempt ${retryCount + 1}/3)`)
-            toast.info(`AI service is busy. Retrying in ${(retryCount + 1) * 2} seconds... (attempt ${retryCount + 1}/3)`)
+            const attemptNumber = retryCount + 1
+            const waitTime = (retryCount + 1) * 2
+            console.log(`Google AI service overloaded, retrying in ${waitTime} seconds... (attempt ${attemptNumber}/3)`)
+            toast.info(`AI service is busy. Retrying in ${waitTime} seconds... (attempt ${attemptNumber}/3)`)
             
             // Wait before retry (exponential backoff)
             await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000))
@@ -122,16 +169,27 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
             if (retryCount === 1 && aiProvider === 'google') {
               console.log('Switching to OpenAI as fallback...')
               setAiProvider('openai')
-              toast.info('Switching to OpenAI as fallback...')
+              toast.info('Switching to OpenAI as fallback for better reliability...')
             }
             
             return handleGenerateContent(retryCount + 1)
           } else {
             throw new Error('AI service is currently overloaded. Please try again in a few minutes, or switch to a different AI provider.')
           }
-        } else if (errorData.error?.includes('parse AI response')) {
+        } else if (errorData.error?.includes('parse AI response') || errorData.error?.includes('JSON parsing failed')) {
           console.error('AI response parsing error:', errorData.error)
-          throw new Error(`AI response format error: ${errorData.error}. Please try again.`)
+          if (retryCount < 2) {
+            const attemptNumber = retryCount + 1
+            console.log(`JSON parsing failed, retrying with simplified prompt... (attempt ${attemptNumber}/2)`)
+            toast.info(`AI response format issue. Retrying with simplified prompt... (attempt ${attemptNumber}/2)`)
+            
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            
+            return handleGenerateContent(retryCount + 1)
+          } else {
+            throw new Error(`AI response format error: ${errorData.error}. Please try again or switch to a different AI provider.`)
+          }
         } else if (errorData.error?.includes('API key')) {
           throw new Error('AI service configuration issue. Please check your API keys.')
         } else {
@@ -171,7 +229,12 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
         isLoading: false,
       }))
 
-      toast.success('Content generated successfully!')
+      // Show success message with attempt information
+      if (retryCount === 0) {
+        toast.success('Content generated successfully on first attempt!')
+      } else {
+        toast.success(`Content generated successfully on attempt ${retryCount + 1}!`)
+      }
     } catch (error: any) {
       console.error('Error generating content:', error)
       
@@ -626,6 +689,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
             <GameSetupStep
               initialData={generationState.gameData}
               onComplete={(data) => handleStepComplete('setup', data)}
+              onDataChange={setCurrentStepFormData}
             />
           )}
 
@@ -680,14 +744,7 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
           
           {generationState.currentStep < generationState.steps.length - 1 && (
             <Button
-              onClick={() => {
-                setGenerationState(prev => ({
-                  ...prev,
-                  currentStep: prev.currentStep + 1
-                }))
-                // Scroll to top when clicking Next
-                window.scrollTo({ top: 0, behavior: 'smooth' })
-              }}
+              onClick={handleStepNext}
               disabled={!canProceed}
             >
               Next
