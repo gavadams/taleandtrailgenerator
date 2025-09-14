@@ -630,7 +630,7 @@ Return ONLY the JSON object in the following format:
       "placeholderName": "{PUB_1}",
       "actualName": "The Crown & Anchor",
       "venueType": "traditional-pub",
-      "narrative": "Story context for this pub${request.cityArea ? ` - MUST mention ${request.cityArea}` : ''}",
+      "narrative": "Story context for this pub${request.cityArea ? ` - MUST mention ${request.cityArea}` : ''}. Use {PUB_1} placeholder for pub name in story text.",
       "transitionText": "Story bridge to next location",
       "mapsLink": "https://maps.google.com/?q=The+Crown+Anchor+${request.city}",
       "walkingTime": "5-10 minutes to next pub",
@@ -641,7 +641,7 @@ Return ONLY the JSON object in the following format:
   "puzzles": [
     {
       "title": "Specific Puzzle Title",
-      "narrative": "Detailed puzzle setup and context that connects to the story and pub location",
+      "narrative": "Detailed puzzle setup and context that connects to the story and pub location. Use {PUB_1} placeholder for pub name.",
       "type": "logic|observation|cipher|deduction|local|wordplay|math|pattern",
       "content": "COMPLETE PUZZLE DATA: Include all necessary information, questions, data, or materials needed to solve the puzzle. This must be immediately solvable without additional setup. Include specific numbers, text, witness statements, or other concrete data.",
       "answer": "EXACT SOLUTION: The precise, specific answer that solves the puzzle (not just 'the answer' or 'solution')",
@@ -666,6 +666,13 @@ ADVANCED STORY REQUIREMENTS:
 - Create MEMORABLE SITUATIONS and dramatic moments that players will remember
 - Build SUSPENSE and EXCITEMENT throughout with cliffhangers and revelations
 - Ensure each location ADVANCES THE PLOT meaningfully - no filler content
+
+🚨 PLACEHOLDER USAGE REQUIREMENTS 🚨:
+- In ALL narrative text (intro, location narratives, puzzle narratives, transition text, resolution), use {PUB_1}, {PUB_2}, etc. placeholders instead of actual pub names
+- This allows the system to automatically substitute the correct pub names from the database
+- Example: "Your investigation begins at {PUB_1}, a pub nestled within Newcastle Central Station" instead of "Your investigation begins at The Centurian, a pub nestled within Newcastle Central Station"
+- Use placeholders in puzzle content, clues, and all story text that mentions pub names
+- The system will automatically replace these with the actual pub names when displaying to users
 
 ADVANCED PUZZLE REQUIREMENTS:
 - Each puzzle must be INTRINSICALLY CONNECTED to the story - not random challenges

@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, MapPin, Puzzle, Clock, Download, Eye, Edit3, Check, X, Save } from 'lucide-react'
 import { RouteMap } from '@/components/ui/route-map'
 import { toast } from 'sonner'
+import { replaceGameContentPlaceholders, createLocationMapping } from '@/lib/text-replacement'
 
 interface GamePreviewProps {
   game: Game
@@ -41,6 +42,11 @@ export function GamePreview({ game, onBack, onSave, onRouteInfoUpdate }: GamePre
   const [tempInputValue, setTempInputValue] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
 
+  // Get content with placeholders replaced
+  const getProcessedContent = () => {
+    const locationMapping = createLocationMapping(editedGame)
+    return replaceGameContentPlaceholders(editedGame.content, locationMapping)
+  }
 
   const getThemeColor = (theme: string) => {
     switch (theme) {
@@ -1023,7 +1029,7 @@ npm                  <div className="mt-4 space-y-3">
                         </div>
                       ) : (
                         <div className="flex items-start justify-between">
-                          <p className="whitespace-pre-wrap flex-1">{location.narrative}</p>
+                          <p className="whitespace-pre-wrap flex-1">{getProcessedContent().locations?.[index]?.narrative || location.narrative}</p>
                           {isEditing && (
                             <Button size="sm" variant="ghost" onClick={() => handleEdit(`location-narrative-${location.id}`)}>
                               <Edit3 className="h-3 w-3" />
@@ -1033,7 +1039,7 @@ npm                  <div className="mt-4 space-y-3">
                       )}
                     </div>
 
-                    {location.puzzles?.map((puzzle) => (
+                    {location.puzzles?.map((puzzle, puzzleIndex) => (
                       <Card key={puzzle.id} className="bg-gray-50">
                         <CardHeader>
                           <div className="flex items-center justify-between">
@@ -1121,7 +1127,7 @@ npm                  <div className="mt-4 space-y-3">
                               </div>
                             ) : (
                               <div className="flex items-start justify-between">
-                                <p className="whitespace-pre-wrap flex-1">{puzzle.narrative}</p>
+                                <p className="whitespace-pre-wrap flex-1">{getProcessedContent().locations?.[index]?.puzzles?.[puzzleIndex]?.narrative || puzzle.narrative}</p>
                                 {isEditing && (
                                   <Button size="sm" variant="ghost" onClick={() => handleEdit(`puzzle-narrative-${puzzle.id}`)}>
                                     <Edit3 className="h-3 w-3" />
@@ -1624,7 +1630,7 @@ npm                  <div className="mt-4 space-y-3">
                     </div>
                   ) : (
                     <div className="flex items-start justify-between">
-                      <p className="whitespace-pre-wrap flex-1">{editedGame.content?.resolution?.content}</p>
+                      <p className="whitespace-pre-wrap flex-1">{getProcessedContent().resolution?.content || editedGame.content?.resolution?.content}</p>
                       {isEditing && (
                         <Button size="sm" variant="ghost" onClick={() => handleEdit('resolution-content')}>
                           <Edit3 className="h-3 w-3" />
@@ -1640,18 +1646,18 @@ npm                  <div className="mt-4 space-y-3">
           <TabsContent value="full" className="space-y-4">
             <div className="prose max-w-none">
               <h2>{editedGame.content.intro?.title || 'Introduction'}</h2>
-              <p className="whitespace-pre-wrap">{editedGame.content.intro?.content}</p>
+              <p className="whitespace-pre-wrap">{getProcessedContent().intro?.content || editedGame.content.intro?.content}</p>
               
               {editedGame.content.locations?.map((location, index) => (
                 <div key={location.id}>
                   <h2>Pub #{index + 1} – {location.actualName || location.placeholderName}</h2>
-                  <p className="whitespace-pre-wrap">{location.narrative}</p>
+                  <p className="whitespace-pre-wrap">{getProcessedContent().locations?.[index]?.narrative || location.narrative}</p>
                   
-                  {location.puzzles?.map((puzzle) => (
+                  {location.puzzles?.map((puzzle, puzzleIndex) => (
                     <div key={puzzle.id}>
                       <h3>{puzzle.title}</h3>
-                      <p className="whitespace-pre-wrap">{puzzle.narrative}</p>
-                      <p className="whitespace-pre-wrap">{puzzle.content}</p>
+                      <p className="whitespace-pre-wrap">{getProcessedContent().locations?.[index]?.puzzles?.[puzzleIndex]?.narrative || puzzle.narrative}</p>
+                      <p className="whitespace-pre-wrap">{getProcessedContent().locations?.[index]?.puzzles?.[puzzleIndex]?.content || puzzle.content}</p>
                       
                       {puzzle.clues && puzzle.clues.length > 0 && (
                         <div>
@@ -1680,7 +1686,7 @@ npm                  <div className="mt-4 space-y-3">
               ))}
               
               <h2>{editedGame.content.resolution?.title || 'Resolution'}</h2>
-              <p className="whitespace-pre-wrap">{editedGame.content.resolution?.content}</p>
+              <p className="whitespace-pre-wrap">{getProcessedContent().resolution?.content || editedGame.content.resolution?.content}</p>
             </div>
           </TabsContent>
         </Tabs>
