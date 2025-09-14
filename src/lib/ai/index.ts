@@ -241,8 +241,9 @@ Theme: ${request.theme}
 City: ${request.city}
 ${request.cityArea ? `City Area/Neighborhood: ${request.cityArea}` : ''}
 Difficulty: ${request.difficulty}
-Number of pubs: ${request.pubCount}
-Puzzles per pub: ${request.puzzlesPerPub}
+Number of pubs: ${request.pubCount} (EXACTLY ${request.pubCount} PUBS - NO MORE, NO LESS)
+Puzzles per pub: ${request.puzzlesPerPub} (EXACTLY ${request.puzzlesPerPub} PUZZLES PER PUB - NO MORE, NO LESS)
+Total puzzles: ${request.pubCount * request.puzzlesPerPub} (EXACTLY ${request.pubCount * request.puzzlesPerPub} TOTAL PUZZLES)
 Estimated duration: ${request.estimatedDuration} minutes
 
 ${request.customInstructions ? `Custom instructions: ${request.customInstructions}` : ''}
@@ -601,6 +602,15 @@ Return ONLY the JSON object in the following format:
 - If you cannot find enough real pubs in the specified area, use fewer pubs
 - Every pub must have a real name, real venue type, and real details
 
+🚨🚨🚨 CRITICAL COUNT REQUIREMENTS - NON-NEGOTIABLE 🚨🚨🚨:
+- You MUST create EXACTLY ${request.pubCount} locations in the "locations" array
+- Each location MUST have EXACTLY ${request.puzzlesPerPub} puzzles assigned to it
+- The total number of puzzles in the "puzzles" array MUST be EXACTLY ${request.pubCount * request.puzzlesPerPub}
+- Do NOT create more or fewer locations than ${request.pubCount}
+- Do NOT create more or fewer puzzles than ${request.pubCount * request.puzzlesPerPub}
+- Each puzzle MUST have an "order" field that corresponds to its location (1-${request.pubCount})
+- FAILURE TO COMPLY WITH THESE EXACT COUNTS WILL RESULT IN AN INVALID RESPONSE
+
 🚨 ROUTE VALIDATION REQUIREMENTS 🚨:
 - Pubs MUST be within reasonable walking distance (5-15 minutes between each pub)
 - Total route distance should be 1-3 miles maximum for a comfortable pub crawl
@@ -696,6 +706,16 @@ QUALITY STANDARDS:
 FINAL CRITICAL INSTRUCTION: You MUST use REAL, ESTABLISHED pub crawl routes from online sources, travel guides, and local recommendations. Do NOT create fictional routes or pubs. Research actual pub crawl routes that are documented and popular in the specified area. This is essential for creating an authentic and practical experience.
 
 ${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pub crawl for ${request.cityArea} in ${request.city}. Do NOT use generic default pubs that are commonly used regardless of area. Instead, research actual pubs that are specifically located in ${request.cityArea} and are part of real pub crawl routes for that area. Only use pubs that are genuinely in ${request.cityArea}, not pubs from other areas that are commonly used as defaults.` : ''}
+
+🚨🚨🚨 FINAL COUNT VERIFICATION 🚨🚨🚨:
+Before submitting your response, verify:
+- You have created EXACTLY ${request.pubCount} locations
+- You have created EXACTLY ${request.pubCount * request.puzzlesPerPub} total puzzles
+- Each location has EXACTLY ${request.puzzlesPerPub} puzzles assigned to it
+- All puzzles have correct "order" values (1-${request.pubCount})
+- The JSON structure is valid and complete
+
+FAILURE TO MEET THESE EXACT REQUIREMENTS WILL RESULT IN REJECTION.
     `.trim()
   }
 
@@ -808,6 +828,50 @@ ${request.cityArea ? `🚨 AREA-SPECIFIC INSTRUCTION 🚨: You are creating a pu
           parsed
         })
         throw new Error('Invalid response structure from AI - missing required fields')
+      }
+
+      // Validate exact counts if request parameters are available
+      if (request) {
+        const actualLocationCount = parsed.locations.length
+        const actualPuzzleCount = parsed.puzzles.length
+        const expectedLocationCount = request.pubCount
+        const expectedPuzzleCount = request.pubCount * request.puzzlesPerPub
+
+        console.log('Count validation:', {
+          expectedLocations: expectedLocationCount,
+          actualLocations: actualLocationCount,
+          expectedPuzzles: expectedPuzzleCount,
+          actualPuzzles: actualPuzzleCount
+        })
+
+        if (actualLocationCount !== expectedLocationCount) {
+          console.error(`Location count mismatch: expected ${expectedLocationCount}, got ${actualLocationCount}`)
+          throw new Error(`AI generated ${actualLocationCount} locations but ${expectedLocationCount} were requested. Please try again.`)
+        }
+
+        if (actualPuzzleCount !== expectedPuzzleCount) {
+          console.error(`Puzzle count mismatch: expected ${expectedPuzzleCount}, got ${actualPuzzleCount}`)
+          throw new Error(`AI generated ${actualPuzzleCount} puzzles but ${expectedPuzzleCount} were requested. Please try again.`)
+        }
+
+        // Validate that puzzles are distributed correctly across locations
+        const puzzlesPerLocation = new Map<number, number>()
+        parsed.puzzles.forEach((puzzle: any) => {
+          const order = puzzle.order
+          if (order >= 1 && order <= expectedLocationCount) {
+            puzzlesPerLocation.set(order, (puzzlesPerLocation.get(order) || 0) + 1)
+          }
+        })
+
+        for (let i = 1; i <= expectedLocationCount; i++) {
+          const puzzleCount = puzzlesPerLocation.get(i) || 0
+          if (puzzleCount !== request.puzzlesPerPub) {
+            console.error(`Location ${i} has ${puzzleCount} puzzles but ${request.puzzlesPerPub} were requested`)
+            throw new Error(`Location ${i} has ${puzzleCount} puzzles but ${request.puzzlesPerPub} were requested. Please try again.`)
+          }
+        }
+
+        console.log('✅ All count validations passed')
       }
 
       // Validate area compliance if cityArea was specified (lenient check)

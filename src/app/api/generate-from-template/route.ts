@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
       city,
       cityArea,
       difficulty: template.difficulty,
-      pubCount: 5, // Default, can be made configurable
-      puzzlesPerPub: 2, // Default, can be made configurable
-      estimatedDuration: 120, // Default, can be made configurable
+      pubCount: body.pubCount || 5, // Use user-specified count or default
+      puzzlesPerPub: body.puzzlesPerPub || 2, // Use user-specified count or default
+      estimatedDuration: body.estimatedDuration || 120, // Use user-specified duration or default
       customInstructions: buildTemplateInstructions(transformedTemplate, customInstructions)
     }
 

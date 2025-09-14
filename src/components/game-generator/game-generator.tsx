@@ -94,6 +94,9 @@ export function GameGenerator({ game, onBack, onGameCreated }: GameGeneratorProp
           templateId,
           city: generationState.gameData.city!,
           cityArea: (generationState.gameData as any).cityArea,
+          pubCount: generationState.gameData.pubCount!,
+          puzzlesPerPub: generationState.gameData.puzzlesPerPub!,
+          estimatedDuration: generationState.gameData.estimatedDuration!,
           provider: aiProvider,
         }
         apiEndpoint = '/api/generate-from-template'
