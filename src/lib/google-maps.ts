@@ -5,7 +5,7 @@
 // - Directions API
 // - Places API (optional, for better location search)
 
-export const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyBFw0Qbyq9zTFTd-tUY6dOWWgE4l7I9F8k'
+export const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
 
 export const generateGoogleMapsEmbedUrl = (locations: Array<{actualName?: string, placeholderName?: string, order: number, coordinates?: {lat: number, lng: number}}>) => {
   console.log('generateGoogleMapsEmbedUrl called with:', locations)
